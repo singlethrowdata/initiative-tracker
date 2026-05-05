@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/waiting-on",
+      "schedule": "0 9 * * 1"
+    },
+    {
+      "path": "/api/cron/approval-reminders",
+      "schedule": "0 8 * * *"
+    }
+  ]
+}
