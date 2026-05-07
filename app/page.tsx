@@ -60,6 +60,7 @@ export default function Home() {
           </div>
         </a>
         <div className="nav-right">
+          <a className="back-btn" href="https://singlethrow.com/internalhome">← Hub</a>
           <span style={{ fontSize: '.75rem', color: 'var(--text-3)', fontWeight: 600 }}>{user.name}</span>
           <button className="back-btn" onClick={() => signOut({ callbackUrl: '/login' })}>
             Sign out
@@ -72,7 +73,7 @@ export default function Home() {
           <h1>Initiative <span>Tracker</span></h1>
           <p>Track, collaborate, and complete projects across the team.</p>
           <div className="tab-bar">
-            {(['tracker', 'archive', 'community', 'personal'] as Tab[]).map(t => (
+            {(['personal', 'community', 'tracker', 'archive'] as Tab[]).map(t => (
               <button
                 key={t}
                 className={`tab-btn${tab === t ? ' active' : ''}`}
