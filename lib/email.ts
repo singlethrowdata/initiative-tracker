@@ -35,7 +35,7 @@ function buildRawMessage(from: string, to: string, subject: string, html: string
   return Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-async function send(to: string, subject: string, html: string, text: string) {
+export async function send(to: string, subject: string, html: string, text: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const auth = new google.auth.JWT({
       email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
@@ -48,8 +48,12 @@ async function send(to: string, subject: string, html: string, text: string) {
       userId: 'me',
       requestBody: { raw: buildRawMessage(FROM, to, subject, html, text) },
     })
-  } catch (e) {
-    console.error('Email send failed:', e)
+    return { ok: true }
+  } catch (e: unknown) {
+    const err = e as { message?: string; response?: { data?: { error?: { message?: string } } } }
+    const detail = err.response?.data?.error?.message ?? err.message ?? String(e)
+    console.error(`Email send failed → to=${to} from=${FROM}: ${detail}`)
+    return { ok: false, error: detail }
   }
 }
 
