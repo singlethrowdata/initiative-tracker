@@ -1,7 +1,6 @@
-import { google } from 'googleapis'
+import { getSession } from '@/lib/session'
 
-// Gmail API + domain-wide delegation. Service account impersonates GMAIL_SEND_AS.
-const FROM = process.env.GMAIL_SEND_AS ?? 'noreply@singlethrow.com'
+// Gmail API via the logged-in user's OAuth token (gmail.send scope granted at sign-in).
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 const header = (title: string) =>
@@ -37,23 +36,34 @@ function buildRawMessage(from: string, to: string, subject: string, html: string
 
 export async function send(to: string, subject: string, html: string, text: string): Promise<{ ok: boolean; error?: string }> {
   try {
-    const auth = new google.auth.JWT({
-      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
-      key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      scopes: ['https://www.googleapis.com/auth/gmail.send'],
-      subject: FROM,
+    const session = await getSession()
+    const accessToken = (session as { accessToken?: string })?.accessToken
+    const from = session?.user?.email
+    if (!accessToken || !from) {
+      console.error('Email send skipped: no access token / user in session')
+      return { ok: false, error: 'No access token in session' }
+    }
+
+    const raw = buildRawMessage(from, to, subject, html, text)
+    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ raw }),
     })
-    const gmail = google.gmail({ version: 'v1', auth })
-    await gmail.users.messages.send({
-      userId: 'me',
-      requestBody: { raw: buildRawMessage(FROM, to, subject, html, text) },
-    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      console.error(`Email send failed → to=${to} from=${from}: ${res.status} ${text}`)
+      return { ok: false, error: `${res.status}: ${text}` }
+    }
     return { ok: true }
   } catch (e: unknown) {
-    const err = e as { message?: string; response?: { data?: { error?: { message?: string } } } }
-    const detail = err.response?.data?.error?.message ?? err.message ?? String(e)
-    console.error(`Email send failed → to=${to} from=${FROM}: ${detail}`)
-    return { ok: false, error: detail }
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error(`Email send threw → to=${to}: ${msg}`)
+    return { ok: false, error: msg }
   }
 }
 

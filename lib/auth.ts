@@ -9,6 +9,13 @@ export const authOptions: AuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      authorization: {
+        params: {
+          scope: 'openid email profile https://www.googleapis.com/auth/gmail.send',
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
     }),
   ],
   callbacks: {
@@ -24,7 +31,7 @@ export const authOptions: AuthOptions = {
       `
       return true
     },
-    async session({ session }) {
+    async session({ session, token }) {
       if (session.user?.email) {
         const [data] = await sql`
           SELECT display_name, role, status
@@ -41,10 +48,15 @@ export const authOptions: AuthOptions = {
           session.user.isActive = data.status !== 'Inactive'
         }
       }
+      // @ts-expect-error — expose Gmail token to server-side callers via getSession()
+      session.accessToken = token.accessToken
       return session
     },
-    async jwt({ token, profile }) {
+    async jwt({ token, profile, account }) {
       if (profile?.email) token.email = profile.email as string
+      if (account?.access_token) token.accessToken = account.access_token
+      if (account?.refresh_token) token.refreshToken = account.refresh_token
+      if (account?.expires_at) token.expiresAt = account.expires_at
       return token
     },
   },
