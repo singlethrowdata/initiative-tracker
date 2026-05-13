@@ -93,7 +93,7 @@ export default function Home() {
             <ArchiveTab user={user} canDelete={canDelete} />
           )}
           {tab === 'community' && (
-            <CommunityTab user={user} teamList={teamList} />
+            <CommunityTab user={user} canDelete={canDelete} teamList={teamList} />
           )}
           {tab === 'personal' && (
             <PersonalTab user={user} />

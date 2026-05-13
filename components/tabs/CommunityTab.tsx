@@ -3,13 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { CommunityPost, CommunityComment, TeamMember } from '@/types'
 import { initials, fmtRelative } from '@/lib/ui'
+import MentionInput from '@/components/shared/MentionInput'
 
 interface Props {
   user: { email: string; name: string }
+  canDelete: boolean
   teamList: TeamMember[]
 }
 
-export default function CommunityTab({ user, teamList }: Props) {
+export default function CommunityTab({ user, canDelete, teamList }: Props) {
   const [posts, setPosts] = useState<(CommunityPost & { community_comments: CommunityComment[] })[]>([])
   const [loading, setLoading] = useState(true)
   const [title, setTitle] = useState('')
@@ -68,6 +70,16 @@ export default function CommunityTab({ user, teamList }: Props) {
     setPosts(prev => prev.filter(p => p.id !== postId))
   }
 
+  async function handleDeleteComment(postId: string, commentId: string) {
+    if (!confirm('Delete this comment?')) return
+    await fetch(`/api/community/${postId}/comments/${commentId}`, { method: 'DELETE' })
+    setPosts(prev => prev.map(p =>
+      p.id === postId
+        ? { ...p, community_comments: (p.community_comments ?? []).filter(c => c.id !== commentId) }
+        : p
+    ))
+  }
+
   const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000
   const now = Date.now()
   const isRecent = (d: string) => (now - new Date(d).getTime()) < ONE_MONTH_MS
@@ -122,7 +134,7 @@ export default function CommunityTab({ user, teamList }: Props) {
             <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             <span>{commentCount === 0 ? 'Comment' : `${commentCount} ${commentCount === 1 ? 'Comment' : 'Comments'}`}</span>
           </button>
-          {isOwner && (
+          {(isOwner || canDelete) && (
             <div className="post-bar-right">
               <button className="btn btn-danger-o btn-xs" onClick={() => handleDelete(post.id)}>Delete</button>
             </div>
@@ -131,23 +143,35 @@ export default function CommunityTab({ user, teamList }: Props) {
 
         {showComments && (
           <div className="comments">
-            {(post.community_comments ?? []).map(c => (
-              <div key={c.id} className="cmt">
-                <div className="cmt-avatar">{initials(c.user_name)}</div>
-                <div className="cmt-body">
-                  <div className="cn">{c.user_name}</div>
-                  <div className="ct">{c.content}</div>
-                  <div className="cd">{fmtRelative(c.created_at)}</div>
+            {(post.community_comments ?? []).map(c => {
+              const canDeleteComment = c.user_email === user.email || canDelete
+              return (
+                <div key={c.id} className="cmt">
+                  <div className="cmt-avatar">{initials(c.user_name)}</div>
+                  <div className="cmt-body">
+                    <div className="cn">
+                      {c.user_name}
+                      {canDeleteComment && (
+                        <button
+                          className="cmt-del"
+                          onClick={() => handleDeleteComment(post.id, c.id)}
+                          title="Delete comment"
+                        >×</button>
+                      )}
+                    </div>
+                    <div className="ct">{c.content}</div>
+                    <div className="cd">{fmtRelative(c.created_at)}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
             <div className="cmt-compose">
-              <input
-                type="text"
-                placeholder="Add a comment…"
+              <MentionInput
                 value={commentDrafts[post.id] ?? ''}
-                onChange={e => setCommentDrafts(prev => ({ ...prev, [post.id]: e.target.value }))}
-                onKeyDown={e => { if (e.key === 'Enter') handleComment(post.id) }}
+                onChange={(v) => setCommentDrafts(prev => ({ ...prev, [post.id]: v }))}
+                onEnter={() => handleComment(post.id)}
+                placeholder="Add a comment… (use @ to tag teammates)"
+                teamList={teamList}
               />
               <button className="btn btn-soft btn-sm" onClick={() => handleComment(post.id)}>Reply</button>
             </div>
@@ -171,10 +195,12 @@ export default function CommunityTab({ user, teamList }: Props) {
           value={title}
           onChange={e => setTitle(e.target.value)}
         />
-        <textarea
-          placeholder="Add more detail (optional)…"
+        <MentionInput
           value={content}
-          onChange={e => setContent(e.target.value)}
+          onChange={setContent}
+          placeholder="Add more detail (optional)… (use @ to tag teammates)"
+          teamList={teamList}
+          multiline
           rows={3}
         />
         <div className="compose-footer">
