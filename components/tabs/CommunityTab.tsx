@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { CommunityPost, CommunityComment, TeamMember } from '@/types'
 import { initials, fmtRelative } from '@/lib/ui'
 import MentionInput from '@/components/shared/MentionInput'
+import MentionText from '@/components/shared/MentionText'
 
 interface Props {
   user: { email: string; name: string }
@@ -113,8 +114,8 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
             <div className="pdate">{fmtRelative(post.created_at)}</div>
           </div>
         </div>
-        <div className="post-title">{post.title}</div>
-        {post.content && <div className="post-body">{post.content}</div>}
+        <div className="post-title"><MentionText text={post.title} /></div>
+        {post.content && <div className="post-body"><MentionText text={post.content} /></div>}
         <div className="post-bar">
           <button
             className={`like-btn${post.liked_by_user ? ' liked' : ''}`}
@@ -159,7 +160,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
                         >×</button>
                       )}
                     </div>
-                    <div className="ct">{c.content}</div>
+                    <div className="ct"><MentionText text={c.content} /></div>
                     <div className="cd">{fmtRelative(c.created_at)}</div>
                   </div>
                 </div>
