@@ -77,6 +77,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 .btn-xs{padding:.25rem .6rem;font-size:.65rem;border-radius:7px}
 .btn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 
+.community-section-h{max-width:760px;margin:1.5rem auto .75rem;font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 .25rem}
+.community-section-h:first-of-type{margin-top:.25rem}
 .post{background:var(--bg-w);border:1.5px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1rem;box-shadow:var(--shadow);max-width:760px;margin-left:auto;margin-right:auto;transition:all .3s ease}
 .post:hover{border-color:var(--border-hover);box-shadow:var(--shadow-lg);transform:translateY(-2px)}
 .post-head{display:flex;align-items:center;gap:.75rem;margin-bottom:1rem}
