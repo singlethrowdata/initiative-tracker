@@ -39,6 +39,6 @@ export async function sqlUpdate(
   params.push(whereId)
 
   const query = `UPDATE "${table}" SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`
-  const rows = await (sql as unknown as (q: string, p: unknown[]) => Promise<Record<string, unknown>[]>)(query, params)
+  const rows = await (sql as unknown as { query: (q: string, p: unknown[]) => Promise<Record<string, unknown>[]> }).query(query, params)
   return rows[0] ?? null
 }

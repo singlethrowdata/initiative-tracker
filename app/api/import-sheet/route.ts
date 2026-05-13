@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { google, sheets_v4 } from 'googleapis'
 import { sql } from '@/lib/db'
+import { randomUUID } from 'crypto'
 
 const SHEET_ID = '1jDCDCvuCKAG46b58k93iUrAKC5OXUphIzBKBYtpfVHE'
 const TABS = [
@@ -37,7 +38,6 @@ async function readTab(sheets: sheets_v4.Sheets, tab: string): Promise<Record<st
   })
 }
 
-// '' → null for date/timestamp fields
 const dt = (v?: string) => (v == null || v === '' ? null : v)
 const bool = (v?: string) => v === 'TRUE' || v === 'true' || v === '1'
 
@@ -46,13 +46,22 @@ async function rawInsert(table: string, row: Record<string, unknown>) {
   const cols = entries.map(([k]) => `"${k}"`).join(',')
   const placeholders = entries.map((_, i) => `$${i + 1}`).join(',')
   const query = `INSERT INTO "${table}" (${cols}) VALUES (${placeholders})`
-  await (sql as unknown as (q: string, p: unknown[]) => Promise<unknown[]>)(
+  await (sql as unknown as { query: (q: string, p: unknown[]) => Promise<unknown> }).query(
     query,
     entries.map(([, v]) => v),
   )
 }
 
-// GET — preview headers OR run import with ?run=yes
+// Maps short sheet IDs (e.g. "68ab756b") to full UUIDs, deterministically per-import
+class IdMap {
+  private m = new Map<string, string>()
+  get(oldId: string): string {
+    if (!oldId) return randomUUID()
+    if (!this.m.has(oldId)) this.m.set(oldId, randomUUID())
+    return this.m.get(oldId)!
+  }
+}
+
 export async function GET(req: Request) {
   const session = await getSession()
   if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -61,7 +70,6 @@ export async function GET(req: Request) {
   const sheets = getSheets()
 
   if (searchParams.get('run') !== 'yes') {
-    // Preview mode — return headers from each tab
     const result: Record<string, string[]> = {}
     for (const tab of TABS) {
       try {
@@ -77,7 +85,6 @@ export async function GET(req: Request) {
     return NextResponse.json(result)
   }
 
-  // Import mode
   const errors: Array<{ table: string; id?: string; error: string }> = []
 
   try {
@@ -93,8 +100,13 @@ export async function GET(req: Request) {
       readTab(sheets, 'PersonalComments'),
     ])
 
-    // Wipe existing data in reverse FK order
     await sql`TRUNCATE personal_comments, personal_notes, post_likes, community_comments, community_posts, initiative_notes, update_comments, updates, initiatives CASCADE`
+
+    // Separate ID namespaces so that, e.g., a post ID and an initiative ID never collide
+    const initiativeIds = new IdMap()
+    const updateIds = new IdMap()
+    const postIds = new IdMap()
+    const noteIds = new IdMap()
 
     const counts: Record<string, number> = {}
 
@@ -104,7 +116,7 @@ export async function GET(req: Request) {
       if (!r.id || !r.taskName) continue
       try {
         await rawInsert('initiatives', {
-          id: r.id,
+          id: initiativeIds.get(r.id),
           status: r.status || 'Not Started',
           task_name: r.taskName,
           type: r.type || '',
@@ -148,7 +160,7 @@ export async function GET(req: Request) {
       if (!r.id || !r.taskName) continue
       try {
         await rawInsert('initiatives', {
-          id: r.id,
+          id: initiativeIds.get(r.id),
           status: r.status || 'Not Started',
           task_name: r.taskName,
           type: r.type || '',
@@ -190,8 +202,8 @@ export async function GET(req: Request) {
       if (!r.id || !r.initiativeId) continue
       try {
         await rawInsert('updates', {
-          id: r.id,
-          initiative_id: r.initiativeId,
+          id: updateIds.get(r.id),
+          initiative_id: initiativeIds.get(r.initiativeId),
           user_email: r.userEmail || '',
           user_name: r.userName || '',
           description: r.description || '',
@@ -216,8 +228,8 @@ export async function GET(req: Request) {
       if (!r.id || !r.updateId) continue
       try {
         await rawInsert('update_comments', {
-          id: r.id,
-          update_id: r.updateId,
+          id: randomUUID(),
+          update_id: updateIds.get(r.updateId),
           user_email: r.userEmail || '',
           user_name: r.userName || '',
           content: r.content || '',
@@ -236,8 +248,8 @@ export async function GET(req: Request) {
       if (!r.id || !r.initiativeId) continue
       try {
         await rawInsert('initiative_notes', {
-          id: r.id,
-          initiative_id: r.initiativeId,
+          id: randomUUID(),
+          initiative_id: initiativeIds.get(r.initiativeId),
           user_email: r.userEmail || '',
           user_name: r.userName || '',
           content: r.content || '',
@@ -255,9 +267,10 @@ export async function GET(req: Request) {
     let likesCount = 0
     for (const r of community) {
       if (!r.id) continue
+      const newPostId = postIds.get(r.id)
       try {
         await rawInsert('community_posts', {
-          id: r.id,
+          id: newPostId,
           user_email: r.userEmail || '',
           user_name: r.userName || '',
           title: r.title || '',
@@ -271,7 +284,7 @@ export async function GET(req: Request) {
           const emails = r.likedBy.split(',').map(e => e.trim()).filter(Boolean)
           for (const email of emails) {
             try {
-              await rawInsert('post_likes', { post_id: r.id, user_email: email })
+              await rawInsert('post_likes', { post_id: newPostId, user_email: email })
               likesCount++
             } catch {
               // ignore duplicate likes
@@ -291,8 +304,8 @@ export async function GET(req: Request) {
       if (!r.id || !r.postId) continue
       try {
         await rawInsert('community_comments', {
-          id: r.id,
-          post_id: r.postId,
+          id: randomUUID(),
+          post_id: postIds.get(r.postId),
           user_email: r.userEmail || '',
           user_name: r.userName || '',
           content: r.content || '',
@@ -311,7 +324,7 @@ export async function GET(req: Request) {
       if (!r.id || !r.userEmail) continue
       try {
         await rawInsert('personal_notes', {
-          id: r.id,
+          id: noteIds.get(r.id),
           user_email: r.userEmail,
           title: r.title || '',
           content: r.content || '',
@@ -331,8 +344,8 @@ export async function GET(req: Request) {
       if (!r.id || !r.noteId) continue
       try {
         await rawInsert('personal_comments', {
-          id: r.id,
-          note_id: r.noteId,
+          id: randomUUID(),
+          note_id: noteIds.get(r.noteId),
           content: r.content || '',
           created_at: dt(r.createdAt),
         })
