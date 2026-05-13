@@ -20,5 +20,5 @@ export async function GET(req: Request) {
     'Test email. If you got this, Gmail API is working.'
   )
 
-  return NextResponse.json({ to, from: process.env.GMAIL_SEND_AS ?? 'noreply@singlethrow.com', ...result })
+  return NextResponse.json({ to, from: session.user.email, ...result })
 }
