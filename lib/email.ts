@@ -1,7 +1,7 @@
-import { Resend } from 'resend'
+import { google } from 'googleapis'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.RESEND_FROM ?? 'noreply@singlethrow.com'
+// Gmail API + domain-wide delegation. Service account impersonates GMAIL_SEND_AS.
+const FROM = process.env.GMAIL_SEND_AS ?? 'noreply@singlethrow.com'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 const header = (title: string) =>
@@ -16,9 +16,38 @@ const card = (body: string) =>
 
 const footer = `<p style="color:#8899A6;font-size:11px;margin:10px 0 0">Single Throw Initiative Tracker</p>`
 
+function buildRawMessage(from: string, to: string, subject: string, html: string, text: string) {
+  const boundary = `b_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  const message =
+    `From: ${from}\r\n` +
+    `To: ${to}\r\n` +
+    `Subject: ${subject}\r\n` +
+    `MIME-Version: 1.0\r\n` +
+    `Content-Type: multipart/alternative; boundary="${boundary}"\r\n` +
+    `\r\n` +
+    `--${boundary}\r\n` +
+    `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
+    `${text}\r\n` +
+    `--${boundary}\r\n` +
+    `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
+    `${html}\r\n` +
+    `--${boundary}--`
+  return Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
 async function send(to: string, subject: string, html: string, text: string) {
   try {
-    await resend.emails.send({ from: FROM, to, subject, html, text })
+    const auth = new google.auth.JWT({
+      email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+      key: process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      scopes: ['https://www.googleapis.com/auth/gmail.send'],
+      subject: FROM,
+    })
+    const gmail = google.gmail({ version: 'v1', auth })
+    await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: { raw: buildRawMessage(FROM, to, subject, html, text) },
+    })
   } catch (e) {
     console.error('Email send failed:', e)
   }
