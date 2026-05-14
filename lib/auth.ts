@@ -5,6 +5,7 @@ import { sql } from './db'
 const ALLOWED_DOMAIN = 'singlethrow.com'
 
 export const authOptions: AuthOptions = {
+  session: { strategy: 'jwt' },
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -54,9 +55,21 @@ export const authOptions: AuthOptions = {
     },
     async jwt({ token, profile, account }) {
       if (profile?.email) token.email = profile.email as string
-      if (account?.access_token) token.accessToken = account.access_token
-      if (account?.refresh_token) token.refreshToken = account.refresh_token
-      if (account?.expires_at) token.expiresAt = account.expires_at
+      if (account) {
+        // Diagnostic: record what we received from the OAuth provider on this sign-in
+        // @ts-expect-error — debug field
+        token._debugAccount = {
+          provider: account.provider,
+          type: account.type,
+          keys: Object.keys(account),
+          hasAccessToken: !!account.access_token,
+          hasRefreshToken: !!account.refresh_token,
+          scope: account.scope,
+        }
+        if (account.access_token) token.accessToken = account.access_token
+        if (account.refresh_token) token.refreshToken = account.refresh_token
+        if (account.expires_at) token.expiresAt = account.expires_at
+      }
       return token
     },
   },

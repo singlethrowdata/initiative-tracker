@@ -21,6 +21,7 @@ export async function GET(req: NextRequest) {
       hasAccessToken: !!(token as { accessToken?: string })?.accessToken,
       hasRefreshToken: !!(token as { refreshToken?: string })?.refreshToken,
       accessTokenPreview: (token as { accessToken?: string })?.accessToken?.slice(0, 24) ?? null,
+      debugAccount: (token as { _debugAccount?: unknown })?._debugAccount ?? null,
     },
   })
 }
