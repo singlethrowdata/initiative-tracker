@@ -27,8 +27,8 @@ export async function POST(req: Request, { params }: Params) {
   const userName = await getMemberName(email)
 
   const [data] = await sql`
-    INSERT INTO community_comments (post_id, user_email, user_name, content)
-    VALUES (${id}, ${email}, ${userName}, ${body.content})
+    INSERT INTO community_comments (post_id, user_email, user_name, content, is_concern)
+    VALUES (${id}, ${email}, ${userName}, ${body.content}, ${!!body.is_concern})
     RETURNING *
   `
 

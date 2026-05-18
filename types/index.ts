@@ -109,6 +109,7 @@ export interface CommunityComment {
   user_email: string
   user_name: string
   content: string
+  is_concern: boolean
   created_at: string
 }
 

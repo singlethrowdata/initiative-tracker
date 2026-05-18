@@ -20,6 +20,9 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
   const [posting, setPosting] = useState(false)
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
+  const [concernOpen, setConcernOpen] = useState<Set<string>>(new Set())
+  const [concernDrafts, setConcernDrafts] = useState<Record<string, string>>({})
+  const [concernError, setConcernError] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -63,6 +66,27 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
       p.id === postId ? { ...p, community_comments: [...(p.community_comments ?? []), comment] } : p
     ))
     setCommentDrafts(prev => ({ ...prev, [postId]: '' }))
+  }
+
+  async function handleConcern(postId: string) {
+    const text = concernDrafts[postId]?.trim()
+    if (!text) {
+      setConcernError(prev => new Set(prev).add(postId))
+      return
+    }
+    const res = await fetch(`/api/community/${postId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text, is_concern: true }),
+    })
+    const comment = await res.json()
+    setPosts(prev => prev.map(p =>
+      p.id === postId ? { ...p, community_comments: [...(p.community_comments ?? []), comment] } : p
+    ))
+    setConcernDrafts(prev => ({ ...prev, [postId]: '' }))
+    setConcernOpen(prev => { const n = new Set(prev); n.delete(postId); return n })
+    setConcernError(prev => { const n = new Set(prev); n.delete(postId); return n })
+    setExpandedComments(prev => new Set(prev).add(postId))
   }
 
   function handleExport() {
@@ -141,7 +165,8 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
             className={`like-btn${post.liked_by_user ? ' liked' : ''}`}
             onClick={() => handleLike(post.id)}
           >
-            <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }}><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
+            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M12 19V5M5 12l7-7 7 7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+            <span>Upvote</span>
             <span className="vote-count">{post.likes}</span>
           </button>
           <button
@@ -155,6 +180,17 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
             <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
             <span>{commentCount === 0 ? 'Comment' : `${commentCount} ${commentCount === 1 ? 'Comment' : 'Comments'}`}</span>
           </button>
+          <button
+            className="concern-btn"
+            onClick={() => setConcernOpen(prev => {
+              const next = new Set(prev)
+              next.has(post.id) ? next.delete(post.id) : next.add(post.id)
+              return next
+            })}
+          >
+            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+            <span>Concern</span>
+          </button>
           {(isOwner || canDelete) && (
             <div className="post-bar-right">
               <button className="btn btn-danger-o btn-xs" onClick={() => handleDelete(post.id)}>Delete</button>
@@ -162,15 +198,49 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
           )}
         </div>
 
+        {concernOpen.has(post.id) && (
+          <div className="concern-compose">
+            <div className="concern-compose-label">
+              <svg viewBox="0 0 24 24" style={{ width: 12, height: 12 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+              Flag a concern — explain your reasoning (required)
+            </div>
+            <div className={concernError.has(post.id) ? 'concern-input-error' : ''}>
+              <MentionInput
+                value={concernDrafts[post.id] ?? ''}
+                onChange={(v) => {
+                  setConcernDrafts(prev => ({ ...prev, [post.id]: v }))
+                  if (v.trim()) setConcernError(prev => { const n = new Set(prev); n.delete(post.id); return n })
+                }}
+                onEnter={() => handleConcern(post.id)}
+                placeholder="Describe your concern…"
+                teamList={teamList}
+                multiline
+                rows={2}
+              />
+            </div>
+            {concernError.has(post.id) && (
+              <div className="concern-error">You must explain your concern before submitting.</div>
+            )}
+            <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
+              <button className="btn btn-concern btn-sm" onClick={() => handleConcern(post.id)}>Submit Concern</button>
+              <button className="btn btn-soft btn-sm" onClick={() => {
+                setConcernOpen(prev => { const n = new Set(prev); n.delete(post.id); return n })
+                setConcernError(prev => { const n = new Set(prev); n.delete(post.id); return n })
+              }}>Cancel</button>
+            </div>
+          </div>
+        )}
+
         {showComments && (
           <div className="comments">
             {(post.community_comments ?? []).map(c => {
               const canDeleteComment = c.user_email === user.email || canDelete
               return (
-                <div key={c.id} className="cmt">
+                <div key={c.id} className={`cmt${c.is_concern ? ' cmt-concern' : ''}`}>
                   <div className="cmt-avatar">{initials(c.user_name)}</div>
                   <div className="cmt-body">
                     <div className="cn">
+                      {c.is_concern && <span className="concern-tag">Concern</span>}
                       {c.user_name}
                       {canDeleteComment && (
                         <button

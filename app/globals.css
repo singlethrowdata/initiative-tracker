@@ -104,11 +104,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 .post-body{color:var(--text-2);font-size:.87rem;line-height:1.75;margin-bottom:1.15rem;white-space:pre-wrap}
 .post-bar{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
 .post-bar-right{margin-left:auto;display:flex;gap:.3rem}
-.like-btn,.comment-btn{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .9rem;border-radius:100px;font-family:var(--font);font-size:.75rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--bg-w);color:var(--text-3);transition:all .25s ease}
+.like-btn,.comment-btn,.concern-btn{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .9rem;border-radius:100px;font-family:var(--font);font-size:.75rem;font-weight:700;cursor:pointer;border:1.5px solid var(--border);background:var(--bg-w);color:var(--text-3);transition:all .25s ease}
 .like-btn:hover{border-color:var(--border-hover);color:var(--blue);background:var(--blue-bg)}
 .like-btn.liked{border-color:rgba(26,82,118,0.25);color:var(--blue);background:var(--blue-bg)}
-.like-btn.liked svg{fill:var(--blue);stroke:var(--blue)}
-@keyframes heartPop{0%{transform:scale(1)}30%{transform:scale(1.35)}100%{transform:scale(1)}}
+.like-btn.liked svg{stroke:var(--blue);fill:rgba(41,128,185,0.15)}
+.concern-btn{color:#c0392b}
+.concern-btn:hover{border-color:rgba(192,57,43,0.3);color:#c0392b;background:#fdf3f2}
 .new-badge{display:inline-flex;align-items:center;gap:.2rem;background:linear-gradient(135deg,#5DADE2,#2980B9);color:#fff;font-size:.55rem;font-weight:800;padding:.18rem .5rem;border-radius:100px;letter-spacing:.06em;text-transform:uppercase;margin-left:.5rem}
 .rank-badge{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:50%;font-size:.6rem;font-weight:800;margin-right:.5rem;flex-shrink:0}
 .rank-badge.r1{background:linear-gradient(135deg,#F5A623,#D4920A);color:#fff}
@@ -120,6 +121,14 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 
 .comments{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
 .cmt{display:flex;gap:.6rem;padding:.65rem 0}
+.cmt.cmt-concern{background:#fdf3f2;border-left:3px solid #e74c3c;border-radius:0 8px 8px 0;padding-left:.75rem;margin-left:-.75rem}
+.concern-tag{display:inline-flex;align-items:center;background:#e74c3c;color:#fff;font-size:.52rem;font-weight:800;padding:.15rem .45rem;border-radius:100px;letter-spacing:.06em;text-transform:uppercase;margin-right:.45rem;vertical-align:middle}
+.concern-compose{margin-top:.75rem;background:#fdf3f2;border:1.5px solid rgba(231,76,60,0.3);border-radius:10px;padding:1rem}
+.concern-compose-label{display:flex;align-items:center;gap:.4rem;font-size:.72rem;font-weight:700;color:#c0392b;margin-bottom:.6rem}
+.concern-error{font-size:.7rem;color:#e74c3c;font-weight:600;margin-top:.35rem}
+.concern-input-error textarea,.concern-input-error input{border-color:#e74c3c!important}
+.btn-concern{background:#e74c3c;color:#fff;border:none}
+.btn-concern:hover{background:#c0392b}
 .cmt-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.58rem;color:var(--blue-l);flex-shrink:0}
 .cmt-body{flex:1}.cmt-body .cn{font-weight:700;font-size:.76rem}.cmt-body .ct{color:var(--text-2);font-size:.8rem;line-height:1.55;margin-top:.1rem}.cmt-body .cd{color:var(--text-3);font-size:.62rem;font-weight:500;margin-top:.15rem}
 .cmt-compose{display:flex;gap:.5rem;margin-top:.5rem}
