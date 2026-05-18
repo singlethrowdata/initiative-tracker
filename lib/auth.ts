@@ -32,25 +32,14 @@ export const authOptions: AuthOptions = {
       `
 
       // Persist the Gmail access token so email.ts can read it by sender email
-      // Also store a debug snapshot of the account object to diagnose token issues
-      const debugInfo = JSON.stringify({
-        provider: account?.provider,
-        type: account?.type,
-        keys: account ? Object.keys(account) : null,
-        hasAccessSnake: !!account?.access_token,
-        hasAccessCamel: !!(account as Record<string, unknown>)?.accessToken,
-        scope: account?.scope,
-      })
-      const token = account?.access_token ?? (account as Record<string, unknown>)?.accessToken as string | undefined
-
-      try {
-        await sql`
-          UPDATE team_members
-          SET gmail_access_token = ${token ?? debugInfo}
-          WHERE email = ${email}
-        `
-      } catch (e) {
-        console.error('Failed to store gmail token:', e)
+      if (account?.access_token) {
+        try {
+          await sql`
+            UPDATE team_members SET gmail_access_token = ${account.access_token} WHERE email = ${email}
+          `
+        } catch (e) {
+          console.error('Failed to store gmail token:', e)
+        }
       }
 
       return true
