@@ -18,7 +18,7 @@ export default function PersonalTab({ user }: Props) {
   const [editTitle, setEditTitle] = useState('')
   const [editContent, setEditContent] = useState('')
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
-  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
+
   const [shared, setShared] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
@@ -142,7 +142,6 @@ export default function PersonalTab({ user }: Props) {
           <p>Your ideas are private — only you can see them.</p>
         </div>
       ) : notes.map(note => {
-        const showComments = expandedComments.has(note.id)
         const commentCount = note.personal_comments?.length ?? 0
         return (
           <div key={note.id} className="post">
@@ -172,17 +171,12 @@ export default function PersonalTab({ user }: Props) {
                 <div className="personal-note-bar">
                   <span className="personal-note-date">{fmtRelative(note.updated_at)}</span>
                   <div className="personal-note-actions">
-                    <button
-                      className="comment-btn"
-                      onClick={() => setExpandedComments(prev => {
-                        const next = new Set(prev)
-                        next.has(note.id) ? next.delete(note.id) : next.add(note.id)
-                        return next
-                      })}
-                    >
-                      <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                      {commentCount > 0 ? commentCount : 'Notes'}
-                    </button>
+                    {commentCount > 0 && (
+                      <span className="personal-note-count">
+                        <svg viewBox="0 0 24 24" style={{ width: 12, height: 12 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
+                        {commentCount}
+                      </span>
+                    )}
                     <button
                       className={`btn btn-grad btn-xs${shared.has(note.id) ? ' btn-shared' : ''}`}
                       onClick={() => handleShareWithTeam(note)}
@@ -204,28 +198,26 @@ export default function PersonalTab({ user }: Props) {
                   </div>
                 </div>
 
-                {showComments && (
-                  <div className="comments">
-                    {(note.personal_comments ?? []).map(c => (
-                      <div key={c.id} className="cmt">
-                        <div className="cmt-body">
-                          <div className="ct">{c.content}</div>
-                          <div className="cd">{fmtRelative(c.created_at)}</div>
-                        </div>
+                <div className="comments">
+                  {(note.personal_comments ?? []).map(c => (
+                    <div key={c.id} className="cmt">
+                      <div className="cmt-body">
+                        <div className="ct">{c.content}</div>
+                        <div className="cd">{fmtRelative(c.created_at)}</div>
                       </div>
-                    ))}
-                    <div className="cmt-compose">
-                      <input
-                        type="text"
-                        placeholder="Add a note…"
-                        value={commentDrafts[note.id] ?? ''}
-                        onChange={e => setCommentDrafts(prev => ({ ...prev, [note.id]: e.target.value }))}
-                        onKeyDown={e => { if (e.key === 'Enter') handleComment(note.id) }}
-                      />
-                      <button className="btn btn-soft btn-sm" onClick={() => handleComment(note.id)}>Add</button>
                     </div>
+                  ))}
+                  <div className="cmt-compose">
+                    <input
+                      type="text"
+                      placeholder="Add a note…"
+                      value={commentDrafts[note.id] ?? ''}
+                      onChange={e => setCommentDrafts(prev => ({ ...prev, [note.id]: e.target.value }))}
+                      onKeyDown={e => { if (e.key === 'Enter') handleComment(note.id) }}
+                    />
+                    <button className="btn btn-soft btn-sm" onClick={() => handleComment(note.id)}>Add</button>
                   </div>
-                )}
+                </div>
               </>
             )}
           </div>

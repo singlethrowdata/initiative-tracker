@@ -84,6 +84,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 .btn-icon-del{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:none;border:1.5px solid var(--border);color:var(--text-3);cursor:pointer;transition:all .2s}
 .btn-icon-del:hover{border-color:rgba(211,54,54,0.4);color:#d33;background:#fdf3f2}
 .btn-shared{opacity:.65;cursor:default!important}
+.personal-note-count{display:inline-flex;align-items:center;gap:.25rem;font-size:.7rem;font-weight:700;color:var(--text-3)}
 .community-section-h{max-width:760px;margin:1.5rem auto .75rem;font-size:.78rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:0 .25rem}
 .community-section-h:first-of-type{margin-top:.25rem}
 .at-tag{background:rgba(41,128,185,0.1);color:var(--blue);font-weight:700;padding:0 .2rem;border-radius:4px}
