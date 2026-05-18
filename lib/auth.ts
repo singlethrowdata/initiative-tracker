@@ -20,16 +20,30 @@ export const authOptions: AuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ profile }) {
-      const email = profile?.email ?? ''
+    async signIn({ profile, account }) {
+      const email = (profile?.email ?? '').toLowerCase()
       if (!email.endsWith(`@${ALLOWED_DOMAIN}`)) return false
 
       const name = profile?.name ?? email.split('@')[0]
       await sql`
         INSERT INTO team_members (email, display_name)
-        VALUES (${email.toLowerCase()}, ${name})
+        VALUES (${email}, ${name})
         ON CONFLICT (email) DO NOTHING
       `
+
+      // Persist the Gmail access token so email.ts can read it by sender email
+      if (account?.access_token) {
+        try {
+          await sql`
+            UPDATE team_members
+            SET gmail_access_token = ${account.access_token}
+            WHERE email = ${email}
+          `
+        } catch {
+          // Column may not exist yet — user needs to call /api/ensure-schema once
+        }
+      }
+
       return true
     },
     async session({ session, token }) {
@@ -49,27 +63,10 @@ export const authOptions: AuthOptions = {
           session.user.isActive = data.status !== 'Inactive'
         }
       }
-      // @ts-expect-error — expose Gmail token to server-side callers via getSession()
-      session.accessToken = token.accessToken
       return session
     },
-    async jwt({ token, profile, account }) {
+    async jwt({ token, profile }) {
       if (profile?.email) token.email = profile.email as string
-      if (account) {
-        // Diagnostic: record what we received from the OAuth provider on this sign-in
-        // @ts-expect-error — debug field
-        token._debugAccount = {
-          provider: account.provider,
-          type: account.type,
-          keys: Object.keys(account),
-          hasAccessToken: !!account.access_token,
-          hasRefreshToken: !!account.refresh_token,
-          scope: account.scope,
-        }
-        if (account.access_token) token.accessToken = account.access_token
-        if (account.refresh_token) token.refreshToken = account.refresh_token
-        if (account.expires_at) token.expiresAt = account.expires_at
-      }
       return token
     },
   },

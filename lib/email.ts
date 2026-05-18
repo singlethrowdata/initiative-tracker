@@ -1,6 +1,7 @@
 import { getSession } from '@/lib/session'
+import { sql } from '@/lib/db'
 
-// Gmail API via the logged-in user's OAuth token (gmail.send scope granted at sign-in).
+// Gmail API via the logged-in user's OAuth token, stored in DB at sign-in.
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 const header = (title: string) =>
@@ -37,11 +38,16 @@ function buildRawMessage(from: string, to: string, subject: string, html: string
 export async function send(to: string, subject: string, html: string, text: string): Promise<{ ok: boolean; error?: string }> {
   try {
     const session = await getSession()
-    const accessToken = (session as { accessToken?: string })?.accessToken
     const from = session?.user?.email
-    if (!accessToken || !from) {
-      console.error('Email send skipped: no access token / user in session')
-      return { ok: false, error: 'No access token in session' }
+    if (!from) return { ok: false, error: 'No session' }
+
+    const [row] = await sql`
+      SELECT gmail_access_token FROM team_members WHERE email = ${from.toLowerCase()}
+    `
+    const accessToken = row?.gmail_access_token as string | undefined
+    if (!accessToken) {
+      console.error(`Email send skipped: no gmail_access_token for ${from} — sign out and sign in again`)
+      return { ok: false, error: 'No Gmail token. Sign out and sign in again to grant access.' }
     }
 
     const raw = buildRawMessage(from, to, subject, html, text)

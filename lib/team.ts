@@ -1,21 +1,24 @@
 import { sql } from './db'
+import { getRegistryTeam } from './registry'
 import { TeamMember } from '@/types'
 
 const CACHE_TTL = 5 * 60 * 1000
-let cache: { data: TeamMember[]; ts: number } | null = null
+let dbCache: { data: TeamMember[]; ts: number } | null = null
 
 export async function getActiveTeam(): Promise<TeamMember[]> {
-  if (cache && Date.now() - cache.ts < CACHE_TTL) return cache.data
+  // Primary: Doc Registry Google Sheet (live employee directory)
+  const registry = await getRegistryTeam()
+  if (registry.length > 0) return registry
 
-  const data = await sql`
-    SELECT * FROM team_members WHERE status = 'Active' ORDER BY display_name
-  `
-  cache = { data: data as TeamMember[], ts: Date.now() }
-  return cache.data
+  // Fallback: database (used if sheet is unavailable)
+  if (dbCache && Date.now() - dbCache.ts < CACHE_TTL) return dbCache.data
+  const data = await sql`SELECT * FROM team_members WHERE status = 'Active' ORDER BY display_name`
+  dbCache = { data: data as TeamMember[], ts: Date.now() }
+  return dbCache.data
 }
 
 export function invalidateTeamCache() {
-  cache = null
+  dbCache = null
 }
 
 export async function getTeamMap(): Promise<Record<string, string>> {
@@ -30,16 +33,16 @@ export async function getTeamByName(): Promise<Record<string, string>> {
 
 export async function isAdmin(email: string): Promise<boolean> {
   if (email.toLowerCase() === 'tech@singlethrow.com') return true
-  const [data] = await sql`
-    SELECT role FROM team_members WHERE email = ${email.toLowerCase()}
-  `
+  const [data] = await sql`SELECT role FROM team_members WHERE email = ${email.toLowerCase()}`
   return data?.role === 'Admin'
 }
 
 export async function getMemberName(email: string): Promise<string> {
-  const [data] = await sql`
-    SELECT display_name FROM team_members WHERE email = ${email.toLowerCase()}
-  `
+  const team = await getActiveTeam()
+  const member = team.find(m => m.email === email.toLowerCase())
+  if (member) return member.display_name
+
+  const [data] = await sql`SELECT display_name FROM team_members WHERE email = ${email.toLowerCase()}`
   if (data?.display_name) return data.display_name as string
   return email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
 }

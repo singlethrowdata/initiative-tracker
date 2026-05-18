@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS team_members (
   role TEXT NOT NULL DEFAULT 'Employee' CHECK (role IN ('Admin', 'Department Head', 'Employee')),
   department TEXT,
   status TEXT NOT NULL DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),
+  gmail_access_token TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
