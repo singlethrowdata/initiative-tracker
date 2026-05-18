@@ -188,8 +188,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
               return next
             })}
           >
-            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-            <span>Concern</span>
+            Concern
           </button>
           {(isOwner || canDelete) && (
             <div className="post-bar-right">
@@ -200,10 +199,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
 
         {concernOpen.has(post.id) && (
           <div className="concern-compose">
-            <div className="concern-compose-label">
-              <svg viewBox="0 0 24 24" style={{ width: 12, height: 12 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
-              Flag a concern — explain your reasoning (required)
-            </div>
+            <div className="concern-compose-label">Flag a concern — explain your reasoning (required)</div>
             <div className={concernError.has(post.id) ? 'concern-input-error' : ''}>
               <MentionInput
                 value={concernDrafts[post.id] ?? ''}
@@ -215,7 +211,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
                 placeholder="Describe your concern…"
                 teamList={teamList}
                 multiline
-                rows={2}
+                rows={4}
               />
             </div>
             {concernError.has(post.id) && (
