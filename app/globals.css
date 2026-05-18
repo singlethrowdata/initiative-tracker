@@ -131,6 +131,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 .cmt.cmt-concern{background:#fdf3f2;border-left:3px solid #e74c3c;border-radius:0 8px 8px 0;padding-left:.75rem;margin-left:-.75rem}
 .concern-tag{display:inline-flex;align-items:center;background:#e74c3c;color:#fff;font-size:.52rem;font-weight:800;padding:.15rem .45rem;border-radius:100px;letter-spacing:.06em;text-transform:uppercase;margin-right:.45rem;vertical-align:middle}
 .concern-compose{margin-top:.75rem;border-left:3px solid rgba(220,38,38,0.4);padding:.75rem .75rem .75rem 1rem;border-radius:0 8px 8px 0}
+.concern-compose>div{width:100%}
+.concern-compose textarea,.concern-compose input{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.65rem .85rem;font-family:var(--font);font-size:.85rem;color:var(--text);line-height:1.6;resize:vertical;box-sizing:border-box}
+.concern-compose textarea:focus,.concern-compose input:focus{outline:none;border-color:rgba(220,38,38,0.5);box-shadow:0 0 0 3px rgba(220,38,38,0.08)}
 .concern-compose-label{font-size:.72rem;font-weight:700;color:#b91c1c;margin-bottom:.5rem}
 .concern-error{font-size:.7rem;color:#b91c1c;font-weight:600;margin-top:.35rem}
 .concern-input-error textarea,.concern-input-error input{border-color:#dc2626!important}
