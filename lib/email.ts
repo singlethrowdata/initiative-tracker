@@ -232,3 +232,26 @@ export async function sendTaskCompletedEmail(
   </div>`
   await send(toEmail, `Task completed: ${taskName}`, `${completedBy} marked a task as done in ${taskName}: ${description}`, html)
 }
+
+export async function sendNewCommunityPostEmail(
+  authorName: string,
+  authorEmail: string,
+  postTitle: string,
+  postContent: string,
+  recipients: { email: string; display_name: string }[]
+) {
+  const communityUrl = `${APP_URL}?tab=community`
+  const html = header('New Community Post') +
+    card(`<p style="color:#1B2A3B;font-size:13px;margin:0 0 6px"><strong>${authorName}</strong> shared a new idea on the Community board:</p>
+      <div style="background:#F4F6F8;border-radius:8px;padding:14px;margin:0 0 16px">
+        <div style="font-size:15px;font-weight:700;color:#1A5276;margin-bottom:6px">${postTitle}</div>
+        <div style="font-size:13px;color:#4A6274;line-height:1.6">${postContent}</div>
+      </div>
+      <a href="${communityUrl}" style="display:inline-block;padding:10px 22px;background:#1A5276;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700">View on Community Board</a>
+      ${footer}`)
+
+  for (const r of recipients) {
+    if (r.email === authorEmail) continue
+    await send(r.email, `${authorName} posted on Community: ${postTitle}`, `${authorName} posted: ${postTitle}\n\n${postContent}`, html)
+  }
+}

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { sql } from '@/lib/db'
-import { getMemberName } from '@/lib/team'
+import { getMemberName, getActiveTeam } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
+import { sendNewCommunityPostEmail } from '@/lib/email'
 
 export async function GET() {
   const session = await getSession()
@@ -54,13 +55,19 @@ export async function POST(req: Request) {
     RETURNING *
   `
 
-  await processAndNotifyMentions(
-    [body.title, body.content].filter(Boolean).join(' '),
-    body.title,
-    'community post',
-    userName,
-    email
-  )
+  const [team] = await Promise.all([
+    getActiveTeam(),
+    processAndNotifyMentions(
+      [body.title, body.content].filter(Boolean).join(' '),
+      body.title,
+      'community post',
+      userName,
+      email
+    ),
+  ])
+
+  // Fire-and-forget — don't block the response on email delivery
+  sendNewCommunityPostEmail(userName, email, body.title, body.content, team).catch(console.error)
 
   return NextResponse.json({ ...data, likes: 0, liked_by_user: false }, { status: 201 })
 }
