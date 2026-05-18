@@ -14,7 +14,7 @@ type Tab = 'tracker' | 'archive' | 'community' | 'personal'
 export default function Home() {
   const { status } = useSession()
   const router = useRouter()
-  const [tab, setTab] = useState<Tab>('tracker')
+  const [tab, setTab] = useState<Tab>('personal')
   const [initData, setInitData] = useState<InitialData | null>(null)
 
   useEffect(() => {
