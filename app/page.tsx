@@ -70,8 +70,8 @@ export default function Home() {
 
       <div style={{ paddingTop: 64 }}>
         <div className="hero-bar">
-          <h1>Initiative <span>Tracker</span></h1>
-          <p>Track, collaborate, and complete projects across the team.</p>
+          <h1>Where <span>ideas</span> become reality.</h1>
+          <p>Your quick-capture notebook, the team's whiteboard, and the company's roadmap.</p>
           <div className="tab-bar">
             {(['personal', 'community', 'tracker', 'archive'] as Tab[]).map(t => (
               <button

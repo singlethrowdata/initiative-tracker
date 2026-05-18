@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { PersonalNote, PersonalComment } from '@/types'
-import { fmtRelative } from '@/lib/ui'
+import { fmtRelative, initials } from '@/lib/ui'
 
 interface Props {
   user: { email: string; name: string }
@@ -19,6 +19,7 @@ export default function PersonalTab({ user }: Props) {
   const [editContent, setEditContent] = useState('')
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({})
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
+  const [shared, setShared] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -59,6 +60,16 @@ export default function PersonalTab({ user }: Props) {
     setNotes(prev => prev.filter(n => n.id !== id))
   }
 
+  async function handleShareWithTeam(note: PersonalNote) {
+    if (!confirm('Share this idea on the Community board? The whole team will see it.')) return
+    await fetch('/api/community', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: note.title, content: note.content }),
+    })
+    setShared(prev => new Set(prev).add(note.id))
+  }
+
   async function handleComment(noteId: string) {
     const text = commentDrafts[noteId]?.trim()
     if (!text) return
@@ -74,31 +85,51 @@ export default function PersonalTab({ user }: Props) {
     setCommentDrafts(prev => ({ ...prev, [noteId]: '' }))
   }
 
+  function handleExport() {
+    const rows = [
+      ['Title', 'Content', 'Date'],
+      ...notes.map(n => [n.title, n.content ?? '', new Date(n.updated_at).toLocaleDateString()])
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'personal-notes.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <>
       <div className="compose">
         <div className="compose-top">
-          <div className="compose-avatar" style={{ fontSize: '.7rem' }}>
-            {user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()}
-          </div>
-          <span>Private note — only visible to you</span>
+          <div className="compose-avatar">{initials(user.name)}</div>
+          <span>Capture it before it&apos;s gone</span>
         </div>
         <input
           type="text"
-          placeholder="Note title…"
+          placeholder="Quick idea, thought, or to-do…"
           value={title}
           onChange={e => setTitle(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') handlePost() }}
         />
         <textarea
-          placeholder="Note content…"
+          placeholder="Flesh it out if you want, or just save the spark. Only you can see this."
           value={content}
           onChange={e => setContent(e.target.value)}
           rows={3}
         />
         <div className="compose-footer">
-          <button className="btn btn-grad btn-sm" onClick={handlePost} disabled={posting || !title.trim()}>
-            {posting ? 'Saving…' : 'Save Note'}
-          </button>
+          <span className="compose-tip">Only visible to you</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-soft btn-sm" onClick={handleExport} disabled={notes.length === 0}>
+              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, marginRight: 4 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+              Export
+            </button>
+            <button className="btn btn-grad btn-sm" onClick={handlePost} disabled={posting || !title.trim()}>
+              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, marginRight: 4 }}><path d="M12 5v14M5 12l7-7 7 7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+              {posting ? 'Saving…' : 'Capture'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -106,12 +137,13 @@ export default function PersonalTab({ user }: Props) {
         <div className="loading"><div className="spinner" /><div>Loading…</div></div>
       ) : notes.length === 0 ? (
         <div className="empty">
-          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></svg>
-          <h3>No personal notes</h3>
-          <p>Your notes are private and only visible to you.</p>
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+          <h3>Nothing captured yet</h3>
+          <p>Your ideas are private — only you can see them.</p>
         </div>
       ) : notes.map(note => {
         const showComments = expandedComments.has(note.id)
+        const commentCount = note.personal_comments?.length ?? 0
         return (
           <div key={note.id} className="post">
             {editing === note.id ? (
@@ -135,11 +167,11 @@ export default function PersonalTab({ user }: Props) {
               </>
             ) : (
               <>
-                <div className="post-title" style={{ marginBottom: '.5rem' }}>{note.title}</div>
-                {note.content && <div className="post-body">{note.content}</div>}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginTop: '.75rem' }}>
-                  <span style={{ fontSize: '.7rem', color: 'var(--text-3)' }}>{fmtRelative(note.updated_at)}</span>
-                  <div style={{ marginLeft: 'auto', display: 'flex', gap: '.3rem' }}>
+                <div className="post-title" style={{ marginBottom: note.content ? '.35rem' : '.75rem' }}>{note.title}</div>
+                {note.content && <div className="post-body" style={{ marginBottom: '.75rem' }}>{note.content}</div>}
+                <div className="personal-note-bar">
+                  <span className="personal-note-date">{fmtRelative(note.updated_at)}</span>
+                  <div className="personal-note-actions">
                     <button
                       className="comment-btn"
                       onClick={() => setExpandedComments(prev => {
@@ -149,10 +181,26 @@ export default function PersonalTab({ user }: Props) {
                       })}
                     >
                       <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg>
-                      {note.personal_comments?.length ?? 0}
+                      {commentCount > 0 ? commentCount : 'Notes'}
                     </button>
-                    <button className="btn btn-soft btn-xs" onClick={() => { setEditing(note.id); setEditTitle(note.title); setEditContent(note.content) }}>Edit</button>
-                    <button className="btn btn-danger-o btn-xs" onClick={() => handleDelete(note.id)}>Delete</button>
+                    <button
+                      className={`btn btn-grad btn-xs${shared.has(note.id) ? ' btn-shared' : ''}`}
+                      onClick={() => handleShareWithTeam(note)}
+                      disabled={shared.has(note.id)}
+                    >
+                      <svg viewBox="0 0 24 24" style={{ width: 11, height: 11, marginRight: 3 }}><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                      {shared.has(note.id) ? 'Shared!' : 'Share with Team'}
+                    </button>
+                    <button
+                      className="btn btn-soft btn-xs"
+                      onClick={() => { setEditing(note.id); setEditTitle(note.title); setEditContent(note.content) }}
+                    >
+                      <svg viewBox="0 0 24 24" style={{ width: 11, height: 11 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                      Edit
+                    </button>
+                    <button className="btn-icon-del" onClick={() => handleDelete(note.id)} title="Delete">
+                      <svg viewBox="0 0 24 24" style={{ width: 14, height: 14 }}><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6M9 6V4h6v2" /></svg>
+                    </button>
                   </div>
                 </div>
 
@@ -169,7 +217,7 @@ export default function PersonalTab({ user }: Props) {
                     <div className="cmt-compose">
                       <input
                         type="text"
-                        placeholder="Add a comment…"
+                        placeholder="Add a note…"
                         value={commentDrafts[note.id] ?? ''}
                         onChange={e => setCommentDrafts(prev => ({ ...prev, [note.id]: e.target.value }))}
                         onKeyDown={e => { if (e.key === 'Enter') handleComment(note.id) }}
