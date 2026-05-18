@@ -58,7 +58,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 .compose textarea{min-height:70px;resize:vertical}
 .compose input:focus,.compose textarea:focus{outline:none;border-color:var(--blue-l);background:var(--bg-w);box-shadow:0 0 0 3px rgba(41,128,185,0.1)}
 .compose input::placeholder,.compose textarea::placeholder{color:var(--text-3);font-weight:500}
-.compose-footer{display:flex;justify-content:flex-end;margin-top:.75rem}
+.compose-footer{display:flex;justify-content:space-between;align-items:center;margin-top:.75rem;gap:.5rem}
+.compose-tip{font-size:.7rem;color:var(--text-3);flex:1}
 .mention-hint{font-size:.68rem;color:var(--text-3);margin-top:.35rem;font-weight:500}
 .mention-hint strong{color:var(--blue-l);font-weight:700}
 

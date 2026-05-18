@@ -65,6 +65,26 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
     setCommentDrafts(prev => ({ ...prev, [postId]: '' }))
   }
 
+  function handleExport() {
+    const rows = [
+      ['Title', 'Author', 'Date Posted', 'Content', 'Likes', 'Comments'],
+      ...posts.map(p => [
+        p.title,
+        p.user_name,
+        new Date(p.created_at).toLocaleDateString(),
+        p.content ?? '',
+        String(p.likes),
+        (p.community_comments ?? []).map(c => `${c.user_name}: ${c.content}`).join(' | '),
+      ])
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'community-board.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
   async function handleDelete(postId: string) {
     if (!confirm('Delete this post?')) return
     await fetch(`/api/community/${postId}`, { method: 'DELETE' })
@@ -188,26 +208,34 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
       <div className="compose">
         <div className="compose-top">
           <div className="compose-avatar">{initials(user.name)}</div>
-          <span>{user.name}</span>
+          <span>Share with the team</span>
         </div>
         <input
           type="text"
-          placeholder="Share an idea or suggestion…"
+          placeholder="Pitch your idea…"
           value={title}
           onChange={e => setTitle(e.target.value)}
         />
         <MentionInput
           value={content}
           onChange={setContent}
-          placeholder="Add more detail (optional)… (use @ to tag teammates)"
+          placeholder="What's the idea? What problem does it solve? The team will vote to rank ideas by priority. Use @Name to tag someone or @everyone for the whole team."
           teamList={teamList}
           multiline
           rows={3}
         />
         <div className="compose-footer">
-          <button className="btn btn-grad btn-sm" onClick={handlePost} disabled={posting || !title.trim()}>
-            {posting ? 'Posting…' : 'Post Idea'}
-          </button>
+          <span className="compose-tip">Tip: Type <strong>@Name</strong> to notify someone &bull; New ideas stay featured for 2 weeks, then get ranked by team votes</span>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-soft btn-sm" onClick={handleExport} disabled={posts.length === 0}>
+              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, marginRight: 4 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+              Export
+            </button>
+            <button className="btn btn-grad btn-sm" onClick={handlePost} disabled={posting || !title.trim()}>
+              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, marginRight: 4 }}><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
+              {posting ? 'Posting…' : 'Post'}
+            </button>
+          </div>
         </div>
       </div>
 
