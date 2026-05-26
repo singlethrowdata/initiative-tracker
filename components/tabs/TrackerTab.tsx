@@ -88,13 +88,16 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
             onChange={e => setSearch(e.target.value)}
           />
           <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-            {STATUSES.map(s => <option key={s}>{s}</option>)}
+            <option value="All">All Statuses</option>
+            {STATUSES.slice(1).map(s => <option key={s}>{s}</option>)}
           </select>
           <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
-            {PRIORITIES.map(p => <option key={p}>{p}</option>)}
+            <option value="All">All Priorities</option>
+            {PRIORITIES.slice(1).map(p => <option key={p}>{p}</option>)}
           </select>
           <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-            {TYPES.map(t => <option key={t}>{t}</option>)}
+            <option value="All">All Types</option>
+            {TYPES.slice(1).map(t => <option key={t}>{t}</option>)}
           </select>
         </div>
 
