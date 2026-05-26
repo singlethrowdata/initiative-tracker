@@ -37,6 +37,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
   const [linkUrl, setLinkUrl] = useState('')
   const [noteCommentDrafts, setNoteCommentDrafts] = useState<Record<string, string>>({})
   const [showNoteComments, setShowNoteComments] = useState<Set<string>>(new Set())
+  const [editingComment, setEditingComment] = useState<{ id: string; noteId: string; draft: string } | null>(null)
   const [showEdit, setShowEdit] = useState(false)
 
   useEffect(() => {
@@ -100,6 +101,30 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
       n.id === noteId ? { ...n, note_comments: [...(n.note_comments ?? []), comment] } : n
     ))
     setNoteCommentDrafts(prev => ({ ...prev, [noteId]: '' }))
+  }
+
+  async function handleCommentEdit(noteId: string, commentId: string, content: string) {
+    const res = await fetch(`/api/initiatives/${initiativeId}/notes/${noteId}/comments/${commentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    })
+    const updated = await res.json()
+    setNotes(prev => prev.map(n =>
+      n.id === noteId
+        ? { ...n, note_comments: n.note_comments.map(c => c.id === commentId ? updated : c) }
+        : n
+    ))
+    setEditingComment(null)
+  }
+
+  async function handleCommentDelete(noteId: string, commentId: string) {
+    await fetch(`/api/initiatives/${initiativeId}/notes/${noteId}/comments/${commentId}`, { method: 'DELETE' })
+    setNotes(prev => prev.map(n =>
+      n.id === noteId
+        ? { ...n, note_comments: n.note_comments.filter(c => c.id !== commentId) }
+        : n
+    ))
   }
 
   async function handleLinkAdd() {
@@ -304,10 +329,52 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
                           {showNoteComments.has(n.id) && (n.note_comments ?? []).map((c: NoteComment) => (
                             <div key={c.id} className="ut-cmt">
                               <div className="ut-cmt-avatar">{initials(c.user_name)}</div>
-                              <div className="ut-cmt-body">
+                              <div className="ut-cmt-body" style={{ flex: 1 }}>
                                 <div className="ut-cn">{c.user_name}</div>
-                                <div className="ut-ct">{c.content}</div>
+                                {editingComment?.id === c.id ? (
+                                  <div style={{ display: 'flex', gap: '.4rem', marginTop: '.3rem' }}>
+                                    <input
+                                      type="text"
+                                      value={editingComment.draft}
+                                      onChange={e => setEditingComment(prev => prev ? { ...prev, draft: e.target.value } : prev)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') handleCommentEdit(n.id, c.id, editingComment.draft)
+                                        if (e.key === 'Escape') setEditingComment(null)
+                                      }}
+                                      style={{ flex: 1, fontSize: '.78rem' }}
+                                      autoFocus
+                                    />
+                                    <button className="btn btn-grad btn-xs" onClick={() => handleCommentEdit(n.id, c.id, editingComment.draft)}>Save</button>
+                                    <button className="btn btn-soft btn-xs" onClick={() => setEditingComment(null)}>Cancel</button>
+                                  </div>
+                                ) : (
+                                  <div className="ut-ct">{c.content}</div>
+                                )}
                               </div>
+                              {c.user_email === user.email && editingComment?.id !== c.id && (
+                                <div style={{ display: 'flex', gap: '.25rem', flexShrink: 0 }}>
+                                  <button
+                                    className="icon-btn icon-btn-neutral"
+                                    style={{ width: 22, height: 22, borderRadius: 5 }}
+                                    onClick={() => setEditingComment({ id: c.id, noteId: n.id, draft: c.content })}
+                                    title="Edit"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+                                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    className="icon-btn icon-btn-danger"
+                                    style={{ width: 22, height: 22, borderRadius: 5 }}
+                                    onClick={() => handleCommentDelete(n.id, c.id)}
+                                    title="Delete"
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+                                      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           ))}
                           {showNoteComments.has(n.id) && (
