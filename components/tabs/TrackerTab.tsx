@@ -5,6 +5,7 @@ import { Initiative, TeamMember } from '@/types'
 import DetailsPanel from '@/components/details/DetailsPanel'
 import CreateInitiativeModal from '@/components/modals/CreateInitiativeModal'
 import CompleteModal from '@/components/modals/CompleteModal'
+import ConfirmModal from '@/components/modals/ConfirmModal'
 import InitiativeRow from '@/components/shared/InitiativeRow'
 
 interface Props {
@@ -27,6 +28,7 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [showCreate, setShowCreate] = useState(false)
   const [completeTarget, setCompleteTarget] = useState<Initiative | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Initiative | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -56,10 +58,15 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
     setInitiatives(prev => prev.map(i => i.id === id ? { ...i, status } : i))
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm('Delete this initiative? This cannot be undone.')) return
-    await fetch(`/api/initiatives/${id}`, { method: 'DELETE' })
-    setInitiatives(prev => prev.filter(i => i.id !== id))
+  function handleDelete(id: string) {
+    const initiative = initiatives.find(i => i.id === id)
+    if (initiative) setDeleteTarget(initiative)
+  }
+
+  async function handleDeleteConfirmed() {
+    if (!deleteTarget) return
+    await fetch(`/api/initiatives/${deleteTarget.id}`, { method: 'DELETE' })
+    setInitiatives(prev => prev.filter(i => i.id !== deleteTarget.id))
   }
 
   const selected = initiatives.find(i => i.id === selectedId) ?? null
@@ -168,6 +175,16 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
           teamList={teamList}
           onClose={() => setCompleteTarget(null)}
           onSubmitted={() => { setCompleteTarget(null); load() }}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete Initiative"
+          message={`Are you sure you want to delete "${deleteTarget.task_name}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={handleDeleteConfirmed}
+          onClose={() => setDeleteTarget(null)}
         />
       )}
     </>
