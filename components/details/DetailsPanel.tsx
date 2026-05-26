@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Initiative, TeamMember, InitiativeNote, NoteComment } from '@/types'
 import { fmt, fmtRelative, initials, statusClass, priorityClass, parseLinks, daysBetween } from '@/lib/ui'
 import UpdatesExpand from '@/components/shared/UpdatesExpand'
+import EditInitiativeModal from '@/components/modals/EditInitiativeModal'
 
 interface Props {
   initiativeId: string
@@ -36,6 +37,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
   const [linkUrl, setLinkUrl] = useState('')
   const [noteCommentDrafts, setNoteCommentDrafts] = useState<Record<string, string>>({})
   const [showNoteComments, setShowNoteComments] = useState<Set<string>>(new Set())
+  const [showEdit, setShowEdit] = useState(false)
 
   useEffect(() => {
     fetch(`/api/initiatives/${initiativeId}`)
@@ -174,7 +176,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
               <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M20 6L9 17l-5-5" /></svg>
               Complete
             </button>
-            <button className="btn btn-soft btn-sm" onClick={() => {}}>
+            <button className="btn btn-soft btn-sm" onClick={() => setShowEdit(true)}>
               <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               Edit
             </button>
@@ -514,6 +516,15 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
         <div className="empty">
           <h3>Initiative not found</h3>
         </div>
+      )}
+
+      {showEdit && initiative && (
+        <EditInitiativeModal
+          initiative={initiative}
+          teamList={teamList}
+          onClose={() => setShowEdit(false)}
+          onSaved={saved => { setInitiative(saved); setShowEdit(false); onRefresh() }}
+        />
       )}
     </div>
   )
