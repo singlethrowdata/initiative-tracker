@@ -238,7 +238,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
             >
               {isTransferred ? 'In Tracker ✓' : 'Send to Tracker'}
             </button>
-            {(isOwner || canDelete) && !post.is_resolved && (
+            {!post.is_resolved && (
               <button className="btn btn-soft btn-xs btn-resolve" onClick={() => handleResolve(post.id)}>
                 Resolve
               </button>
