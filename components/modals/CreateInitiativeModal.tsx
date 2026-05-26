@@ -40,6 +40,11 @@ export default function CreateInitiativeModal({ user, teamList, onClose, onCreat
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.task_name.trim()) { setError('Initiative name is required.'); return }
+    if (!form.department) { setError('Department is required.'); return }
+    if (!form.start_date) { setError('Start date is required.'); return }
+    if (!form.anticipated_end_date) { setError('Target end date is required.'); return }
+    if (!form.participants.trim()) { setError('At least one participant is required.'); return }
+    if (!form.description.trim()) { setError('Description is required.'); return }
     setSaving(true)
     setError('')
     const res = await fetch('/api/initiatives', {
@@ -62,13 +67,13 @@ export default function CreateInitiativeModal({ user, teamList, onClose, onCreat
 
           <div className="modal-row">
             <div>
-              <label className="modal-label">Type</label>
+              <label className="modal-label">Type <span className="req">*</span></label>
               <select value={form.type} onChange={e => set('type', e.target.value)}>
                 {TYPES.map(t => <option key={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="modal-label">Priority</label>
+              <label className="modal-label">Priority <span className="req">*</span></label>
               <select value={form.priority} onChange={e => set('priority', e.target.value)}>
                 {PRIORITIES.map(p => <option key={p}>{p}</option>)}
               </select>
@@ -77,13 +82,13 @@ export default function CreateInitiativeModal({ user, teamList, onClose, onCreat
 
           <div className="modal-row">
             <div>
-              <label className="modal-label">Status</label>
+              <label className="modal-label">Status <span className="req">*</span></label>
               <select value={form.status} onChange={e => set('status', e.target.value)}>
                 {STATUSES.map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div>
-              <label className="modal-label">Department</label>
+              <label className="modal-label">Department <span className="req">*</span></label>
               <select value={form.department} onChange={e => set('department', e.target.value)}>
                 <option value="">— Select —</option>
                 {DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
@@ -93,19 +98,19 @@ export default function CreateInitiativeModal({ user, teamList, onClose, onCreat
 
           <div className="modal-row">
             <div>
-              <label className="modal-label">Start Date</label>
+              <label className="modal-label">Start Date <span className="req">*</span></label>
               <input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
             </div>
             <div>
-              <label className="modal-label">Target End Date</label>
+              <label className="modal-label">Target End Date <span className="req">*</span></label>
               <input type="date" value={form.anticipated_end_date} onChange={e => set('anticipated_end_date', e.target.value)} />
             </div>
           </div>
 
-          <label className="modal-label">Participants</label>
+          <label className="modal-label">Participants <span className="req">*</span></label>
           <ParticipantSelect teamList={teamList} value={form.participants} onChange={v => set('participants', v)} />
 
-          <label className="modal-label">Description</label>
+          <label className="modal-label">Description <span className="req">*</span></label>
           <textarea placeholder="What is this initiative about?" value={form.description} onChange={e => set('description', e.target.value)} rows={3} />
 
           <label className="modal-label">Notes</label>
