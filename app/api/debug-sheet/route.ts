@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { google } from 'googleapis'
+import { getActiveTeam } from '@/lib/team'
+import { getRegistryTeam } from '@/lib/registry'
 
 export async function GET() {
   const session = await getSession()
@@ -33,6 +35,9 @@ export async function GET() {
       range: 'Employee Directory',
     })
     const rows = res.data.values ?? []
+    const registryTeam = await getRegistryTeam()
+    const activeTeam = await getActiveTeam()
+
     return NextResponse.json({
       ok: true,
       sheetId,
@@ -40,6 +45,9 @@ export async function GET() {
       rowCount: rows.length,
       headers: rows[0] ?? [],
       sampleRow: rows[1] ?? [],
+      registryTeamCount: registryTeam.length,
+      activeTeamCount: activeTeam.length,
+      registryTeamSample: registryTeam.slice(0, 3),
     })
   } catch (e: any) {
     return NextResponse.json({ error: e.message, code: e.code, status: e.status })
