@@ -31,8 +31,10 @@ export async function getTeamByName(): Promise<Record<string, string>> {
   return Object.fromEntries(team.map(m => [m.display_name, m.email]))
 }
 
+const HARDCODED_ADMINS = ['tech@singlethrow.com', 'submissions@singlethrow.com']
+
 export async function isAdmin(email: string): Promise<boolean> {
-  if (email.toLowerCase() === 'tech@singlethrow.com') return true
+  if (HARDCODED_ADMINS.includes(email.toLowerCase())) return true
   const [data] = await sql`SELECT role FROM team_members WHERE email = ${email.toLowerCase()}`
   return data?.role === 'Admin'
 }
