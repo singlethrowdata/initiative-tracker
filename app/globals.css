@@ -361,10 +361,94 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
 @media(max-width:860px){
   .dp-hero{grid-template-columns:1fr}
   .dp-logo-box{min-height:120px;flex-direction:row;padding:1rem 1.5rem;gap:1rem}
+  .dp-hero-card{flex-direction:column}
+  .dp-hero-left{border-radius:20px 20px 0 0;min-height:120px;flex-direction:row;padding:1rem 1.5rem;gap:1rem}
 }
 @media(max-width:600px){
   .details-body{padding:1rem}
   .dp-hero{border-radius:16px}
   .dp-info{padding:1.25rem}
   .dp-info-title{font-size:1.2rem}
+  .dp-hero-right{padding:1.25rem}
+  .dp-date-boxes{flex-direction:column}
 }
+
+/* ── DetailsPanel redesign ─────────────────────────────────── */
+
+/* Hero card */
+.dp-hero-card{display:flex;flex-direction:row;background:var(--bg-w);border:1.5px solid var(--border);border-radius:24px;overflow:hidden;box-shadow:var(--shadow-lg);margin-bottom:1.5rem}
+.dp-hero-left{background:linear-gradient(135deg,#1A5276,#2980B9,#6B8F71);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;padding:2rem 1.5rem;min-height:200px;min-width:220px;max-width:28%}
+.dp-hero-st-logo{width:40px;height:40px;display:flex;align-items:center;justify-content:center}
+.dp-hero-st-logo svg{width:40px;height:40px}
+.dp-hero-st-label{color:rgba(255,255,255,0.85);font-size:.52rem;font-weight:800;text-transform:uppercase;letter-spacing:.18em;text-align:center}
+.dp-hero-type-badge{background:rgba(255,255,255,0.18);color:#fff;font-size:.65rem;font-weight:800;padding:.3rem .85rem;border-radius:100px;letter-spacing:.06em;border:1px solid rgba(255,255,255,0.28);backdrop-filter:blur(8px)}
+.dp-hero-right{flex:1;padding:1.75rem 2rem;display:flex;flex-direction:column;justify-content:center;gap:1rem}
+.dp-hero-title{font-size:1.4rem;font-weight:900;line-height:1.2;letter-spacing:-.02em;color:var(--text)}
+.dp-hero-meta{display:flex;align-items:center;gap:.65rem;flex-wrap:wrap}
+
+/* Date boxes */
+.dp-date-boxes{display:flex;flex-direction:row;gap:.75rem;flex-wrap:wrap}
+.dp-date-box{background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:.6rem 1rem;min-width:130px}
+.dp-date-box-label{font-size:.52rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:.2rem}
+.dp-date-box-value{font-size:.85rem;font-weight:700;color:var(--text)}
+
+/* Participant chips */
+.dp-participant-chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--bg);border:1.5px solid var(--border);border-radius:100px;padding:.3rem .65rem .3rem .35rem;font-size:.72rem;font-weight:600;color:var(--text-2)}
+.dp-participant-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:800;color:#fff;flex-shrink:0}
+
+/* Approved banner */
+.dp-approved-banner{display:flex;align-items:center;gap:.75rem;padding:1rem 1.5rem;margin-bottom:1.5rem;background:rgba(107,143,113,0.08);border:1.5px solid rgba(107,143,113,0.25);border-left:4px solid var(--green);border-radius:16px;font-size:.82rem;color:var(--text-2);line-height:1.5}
+.dp-approved-banner svg{color:var(--green)}
+
+/* Section cards */
+.dp-section-card{background:var(--bg-w);border:1.5px solid var(--border);border-radius:20px;padding:1.5rem;margin-bottom:1.25rem;box-shadow:var(--shadow)}
+.dp-section-label{display:flex;align-items:center;gap:.4rem;font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3);margin-bottom:.85rem}
+
+/* Progress bar */
+.dp-progress-bar-wrap{position:relative;height:8px;background:rgba(26,82,118,0.08);border-radius:100px;overflow:hidden}
+.dp-progress-bar-fill{position:absolute;left:0;top:0;height:100%;border-radius:100px;transition:width .6s ease}
+
+/* Note rows */
+.dp-note-row{display:flex;align-items:flex-start;gap:.75rem;padding:.85rem 0;border-bottom:1px solid var(--border)}
+.dp-note-row:last-of-type{border-bottom:none}
+.dp-note-textarea{width:100%;font-family:var(--font);font-size:.83rem;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:.65rem .9rem;resize:vertical;min-height:70px;line-height:1.6;transition:border-color .2s}
+.dp-note-textarea:focus{outline:none;border-color:var(--blue-l);box-shadow:0 0 0 3px rgba(41,128,185,0.08)}
+.dp-note-textarea::placeholder{color:var(--text-3);font-weight:500}
+
+/* Link rows */
+.dp-link-row{display:flex;align-items:center;gap:.6rem;padding:.55rem 0;border-bottom:1px solid var(--border)}
+.dp-link-row:last-of-type{border-bottom:none}
+
+/* Field inputs (reusable) */
+.dp-field-input{width:100%;font-family:var(--font);font-size:.8rem;color:var(--text);background:var(--bg);border:1.5px solid var(--border);border-radius:10px;padding:.55rem .85rem;transition:border-color .2s}
+.dp-field-input:focus{outline:none;border-color:var(--blue-l);box-shadow:0 0 0 3px rgba(41,128,185,0.08)}
+.dp-field-input::placeholder{color:var(--text-3)}
+
+/* ── Milestone table ────────────────────────────────────────── */
+
+.milestone-add-form{background:var(--bg);border:1.5px solid var(--border);border-radius:16px;padding:1rem 1.25rem;margin-bottom:1.25rem}
+.milestone-desc-input{width:100%;font-family:var(--font);font-size:.83rem;color:var(--text);background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.65rem .9rem;resize:vertical;min-height:70px;line-height:1.6;transition:border-color .2s;margin-bottom:.6rem}
+.milestone-desc-input:focus{outline:none;border-color:var(--blue-l);box-shadow:0 0 0 3px rgba(41,128,185,0.08)}
+.milestone-desc-input::placeholder{color:var(--text-3);font-weight:500}
+.milestone-form-row{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:.6rem}
+.milestone-form-group{flex:1;min-width:120px;display:flex;flex-direction:column;gap:.2rem}
+.milestone-form-label{font-size:.52rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3)}
+.milestone-form-select{font-family:var(--font);font-size:.75rem;color:var(--text);background:var(--bg-w);border:1.5px solid var(--border);border-radius:8px;padding:.4rem .6rem;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%238899A6' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .5rem center;padding-right:1.6rem}
+.milestone-form-select:focus{outline:none;border-color:var(--blue-l)}
+.milestone-links-input{width:100%;font-family:var(--font);font-size:.78rem;color:var(--text);background:var(--bg-w);border:1.5px solid var(--border);border-radius:8px;padding:.4rem .75rem;transition:border-color .2s}
+.milestone-links-input:focus{outline:none;border-color:var(--blue-l)}
+.milestone-links-input::placeholder{color:var(--text-3)}
+
+.milestone-table{width:100%;border-collapse:collapse;font-size:.74rem;table-layout:auto}
+.milestone-table th{text-align:left;padding:.5rem .65rem;color:var(--text-3);font-weight:700;font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;border-bottom:1.5px solid var(--border);background:var(--bg);white-space:nowrap}
+.milestone-table td{padding:.7rem .65rem;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
+.milestone-table tr:last-child td{border-bottom:none}
+.milestone-table tr:hover td{background:var(--blue-bg)}
+.milestone-table tr.milestone-divider-row:hover td{background:transparent}
+.milestone-divider-row td{padding:.4rem .65rem;border-bottom:none;background:rgba(107,143,113,0.06)}
+.milestone-divider-row span{display:inline-flex;align-items:center;font-size:.56rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green)}
+
+.milestone-by-cell{display:flex;align-items:flex-start;gap:.45rem}
+.milestone-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:800;color:#fff;flex-shrink:0}
+
+.done-checkbox{width:16px;height:16px;accent-color:var(--green);cursor:pointer;border-radius:4px;display:block;margin-top:1px}

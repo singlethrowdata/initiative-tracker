@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Update, TeamMember, Initiative } from '@/types'
-import { initials, fmt, fmtRelative, daysClass, daysBetween } from '@/lib/ui'
+import { initials, fmt, fmtRelative, daysClass, daysBetween, parseLinks } from '@/lib/ui'
 
 interface Props {
   initiative: Initiative
@@ -11,10 +11,25 @@ interface Props {
   onRefresh: () => void
 }
 
+const PARTICIPANT_GRADS = [
+  'linear-gradient(135deg,#1A5276,#2980B9)',
+  'linear-gradient(135deg,#2980B9,#6B8F71)',
+  'linear-gradient(135deg,#6B8F71,#5DADE2)',
+  'linear-gradient(135deg,#1A5276,#6B8F71)',
+  'linear-gradient(135deg,#5DADE2,#2980B9)',
+]
+
+function avatarGrad(name: string) {
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return PARTICIPANT_GRADS[Math.abs(hash) % PARTICIPANT_GRADS.length]
+}
+
 export default function UpdatesExpand({ initiative, user, teamList, onRefresh }: Props) {
   const [updates, setUpdates] = useState<Update[]>([])
   const [loading, setLoading] = useState(true)
   const [desc, setDesc] = useState('')
+  const [assignedTo, setAssignedTo] = useState('')
   const [waitingOn, setWaitingOn] = useState('')
   const [targetDate, setTargetDate] = useState('')
   const [links, setLinks] = useState('')
@@ -36,11 +51,11 @@ export default function UpdatesExpand({ initiative, user, teamList, onRefresh }:
     const res = await fetch(`/api/initiatives/${initiative.id}/updates`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ description: desc, waiting_on: waitingOn, target_date: targetDate || null, links }),
+      body: JSON.stringify({ description: desc, assigned_to: assignedTo, waiting_on: waitingOn, target_date: targetDate || null, links }),
     })
     const update = await res.json()
     setUpdates(prev => [update, ...prev])
-    setDesc(''); setWaitingOn(''); setTargetDate(''); setLinks('')
+    setDesc(''); setAssignedTo(''); setWaitingOn(''); setTargetDate(''); setLinks('')
     setPosting(false)
     onRefresh()
   }
@@ -73,155 +88,251 @@ export default function UpdatesExpand({ initiative, user, teamList, onRefresh }:
   }
 
   const today = new Date().toISOString().slice(0, 10)
+  const active = updates.filter(u => !u.completed)
+  const completed = updates.filter(u => u.completed)
 
   return (
     <div>
-      <h4 style={{ fontSize: '.72rem', fontWeight: 800, marginBottom: '.75rem', color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.08em' }}>
-        Updates
-      </h4>
+      {/* Add form */}
+      <div className="milestone-add-form">
+        <textarea
+          className="milestone-desc-input"
+          placeholder="Describe the update, action item, or progress note..."
+          value={desc}
+          onChange={e => setDesc(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() } }}
+          rows={3}
+        />
+        <div className="milestone-form-row">
+          <div className="milestone-form-group">
+            <label className="milestone-form-label">ASSIGNED TO</label>
+            <select
+              className="milestone-form-select"
+              value={assignedTo}
+              onChange={e => setAssignedTo(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {teamList.map(m => <option key={m.email} value={m.display_name}>{m.display_name}</option>)}
+            </select>
+          </div>
+          <div className="milestone-form-group">
+            <label className="milestone-form-label">WAITING ON</label>
+            <select
+              className="milestone-form-select"
+              value={waitingOn}
+              onChange={e => setWaitingOn(e.target.value)}
+            >
+              <option value="">— None —</option>
+              {teamList.map(m => <option key={m.email} value={m.display_name}>{m.display_name}</option>)}
+            </select>
+          </div>
+          <div className="milestone-form-group">
+            <label className="milestone-form-label">TARGET DATE</label>
+            <input
+              type="date"
+              className="milestone-form-select"
+              value={targetDate}
+              onChange={e => setTargetDate(e.target.value)}
+            />
+          </div>
+        </div>
+        <input
+          type="text"
+          className="milestone-links-input"
+          placeholder="Links (optional, comma-separated)"
+          value={links}
+          onChange={e => setLinks(e.target.value)}
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '.5rem' }}>
+          <button className="btn btn-grad btn-sm" onClick={handleAdd} disabled={posting || !desc.trim()}>
+            {posting ? '…' : '+ Add'}
+          </button>
+        </div>
+      </div>
 
-      <table className="update-table">
-        <thead>
-          <tr>
-            <th style={{ width: '35%' }}>Description</th>
-            <th style={{ width: '12%' }}>Waiting On</th>
-            <th style={{ width: '8%' }}>Target</th>
-            <th style={{ width: '10%' }}>By</th>
-            <th style={{ width: '8%' }}>Status</th>
-            <th style={{ width: '10%' }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-3)' }}>Loading…</td></tr>
-          ) : updates.length === 0 ? (
-            <tr><td colSpan={6} style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-3)', fontSize: '.78rem' }}>No updates yet.</td></tr>
-          ) : updates.map(u => {
-            const daysLeft = u.target_date ? daysBetween(today, u.target_date) : null
-            const cmts = (u as any).update_comments ?? []
-            const hasComments = showComments.has(u.id)
-
-            return (
-              <tr key={u.id} style={{ opacity: u.completed ? .55 : 1 }}>
-                <td className="ut-desc">
-                  <div style={{ textDecoration: u.completed ? 'line-through' : 'none' }}>{u.description}</div>
-                  <div className="ut-meta">{u.user_name} · {fmtRelative(u.created_at)}</div>
-                  {cmts.length > 0 || hasComments ? (
-                    <div className="ut-comments">
-                      {hasComments && cmts.map((c: any) => (
-                        <div key={c.id} className="ut-cmt">
-                          <div className="ut-cmt-avatar">{initials(c.user_name)}</div>
-                          <div className="ut-cmt-body">
-                            <div className="ut-cn">{c.user_name}</div>
-                            <div className="ut-ct">{c.content}</div>
-                          </div>
-                        </div>
-                      ))}
-                      {hasComments && (
-                        <div className="ut-cmt-compose">
-                          <input
-                            type="text"
-                            placeholder="Reply…"
-                            value={commentDrafts[u.id] ?? ''}
-                            onChange={e => setCommentDrafts(prev => ({ ...prev, [u.id]: e.target.value }))}
-                            onKeyDown={e => { if (e.key === 'Enter') handleComment(u.id) }}
-                          />
-                        </div>
-                      )}
-                      <button
-                        className="ut-cmt-toggle"
-                        onClick={() => setShowComments(prev => {
-                          const next = new Set(prev); next.has(u.id) ? next.delete(u.id) : next.add(u.id); return next
-                        })}
-                      >
-                        {hasComments ? 'Hide' : `${cmts.length} comment${cmts.length !== 1 ? 's' : ''}`}
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      className="ut-cmt-toggle"
-                      onClick={() => setShowComments(prev => { const next = new Set(prev); next.add(u.id); return next })}
-                    >
-                      + Comment
-                    </button>
-                  )}
-                </td>
-                <td>
-                  {u.waiting_on ? <span className="ut-waiting-chip">{u.waiting_on}</span> : '—'}
-                </td>
-                <td>
-                  {u.target_date ? (
-                    <span className={daysClass(daysLeft ?? 0, u.completed)}>
-                      {u.completed ? fmt(u.target_date) : daysLeft === 0 ? 'Today' : daysLeft! > 0 ? `${daysLeft}d left` : `${Math.abs(daysLeft!)}d over`}
-                    </span>
-                  ) : '—'}
-                </td>
-                <td style={{ fontSize: '.68rem' }}>{u.user_name}</td>
-                <td>
-                  <span className={u.completed ? 'pill s-complete' : 'pill s-active'} style={{ fontSize: '.62rem' }}>
-                    <span className="d" />{u.completed ? 'Done' : 'Open'}
-                  </span>
-                </td>
-                <td>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                    {!u.completed && (
-                      <button className="btn btn-green btn-xs" onClick={() => handleComplete(u.id)}>Done</button>
-                    )}
-                    {(u.user_email === user.email) && (
-                      <button className="btn btn-danger-o btn-xs" onClick={() => handleDelete(u.id)}>Del</button>
-                    )}
-                  </div>
-                </td>
+      {/* Table */}
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-3)', fontSize: '.78rem' }}>Loading…</div>
+      ) : updates.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-3)', fontSize: '.78rem' }}>No milestones yet. Add the first one above.</div>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table className="milestone-table">
+            <thead>
+              <tr>
+                <th>BY</th>
+                <th>UPDATE</th>
+                <th>ASSIGNED TO</th>
+                <th>WAITING ON</th>
+                <th>TARGET DATE</th>
+                <th>DAYS LEFT</th>
+                <th>DONE</th>
+                <th>LINKS</th>
               </tr>
-            )
-          })}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td>
-              <input
-                className="auto-grow"
-                placeholder="Add an update…"
-                value={desc}
-                onChange={e => setDesc(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAdd() } }}
-              />
-            </td>
-            <td>
-              <select
-                className="inline-wait-select"
-                value={waitingOn}
-                onChange={e => setWaitingOn(e.target.value)}
-              >
-                <option value="">— None —</option>
-                {teamList.map(m => <option key={m.email} value={m.display_name}>{m.display_name}</option>)}
-              </select>
-            </td>
-            <td>
-              <input
-                type="date"
-                value={targetDate}
-                onChange={e => setTargetDate(e.target.value)}
-                style={{ fontFamily: 'var(--font)', fontSize: '.68rem', border: '1px solid var(--border)', borderRadius: 6, padding: '.2rem .4rem', background: 'var(--bg)', color: 'var(--text)' }}
-              />
-            </td>
-            <td colSpan={2}>
-              <input
-                type="text"
-                placeholder="Links"
-                value={links}
-                onChange={e => setLinks(e.target.value)}
-                style={{ width: '100%', fontFamily: 'var(--font)', fontSize: '.68rem', border: '1px solid var(--border)', borderRadius: 6, padding: '.2rem .4rem', background: 'var(--bg)', color: 'var(--text)' }}
-              />
-            </td>
-            <td>
-              <button className="btn btn-soft btn-xs" onClick={handleAdd} disabled={posting || !desc.trim()}>
-                {posting ? '…' : 'Add'}
-              </button>
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+            </thead>
+            <tbody>
+              {active.map(u => <MilestoneRow key={u.id} u={u} user={user} today={today} showComments={showComments} setShowComments={setShowComments} commentDrafts={commentDrafts} setCommentDrafts={setCommentDrafts} handleComplete={handleComplete} handleDelete={handleDelete} handleComment={handleComment} />)}
+              {completed.length > 0 && (
+                <>
+                  <tr className="milestone-divider-row">
+                    <td colSpan={8}>
+                      <span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 11, height: 11, display: 'inline', verticalAlign: 'middle', marginRight: 4 }}><path d="M20 6L9 17l-5-5" /></svg>
+                        COMPLETED
+                      </span>
+                    </td>
+                  </tr>
+                  {completed.map(u => <MilestoneRow key={u.id} u={u} user={user} today={today} showComments={showComments} setShowComments={setShowComments} commentDrafts={commentDrafts} setCommentDrafts={setCommentDrafts} handleComplete={handleComplete} handleDelete={handleDelete} handleComment={handleComment} />)}
+                </>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
+  )
+}
+
+interface RowProps {
+  u: Update
+  user: { email: string; name: string }
+  today: string
+  showComments: Set<string>
+  setShowComments: React.Dispatch<React.SetStateAction<Set<string>>>
+  commentDrafts: Record<string, string>
+  setCommentDrafts: React.Dispatch<React.SetStateAction<Record<string, string>>>
+  handleComplete: (id: string) => void
+  handleDelete: (id: string) => void
+  handleComment: (id: string) => void
+}
+
+function MilestoneRow({ u, user, today, showComments, setShowComments, commentDrafts, setCommentDrafts, handleComplete, handleDelete, handleComment }: RowProps) {
+  const daysLeft = u.target_date ? daysBetween(today, u.target_date) : null
+  const cmts = (u as any).update_comments ?? []
+  const hasComments = showComments.has(u.id)
+  const rowLinks = u.links ? parseLinks(u.links) : []
+
+  return (
+    <tr style={{ opacity: u.completed ? .55 : 1 }}>
+      {/* BY */}
+      <td>
+        <div className="milestone-by-cell">
+          <div className="milestone-avatar" style={{ background: avatarGrad(u.user_name) }}>
+            {initials(u.user_name)}
+          </div>
+          <div>
+            <div style={{ fontSize: '.7rem', fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{u.user_name}</div>
+            <div style={{ fontSize: '.6rem', color: 'var(--text-3)', fontWeight: 500, marginTop: 1 }}>{fmtRelative(u.created_at)}</div>
+          </div>
+        </div>
+      </td>
+
+      {/* UPDATE */}
+      <td style={{ minWidth: 200 }}>
+        <div style={{ fontSize: '.78rem', color: 'var(--text-2)', lineHeight: 1.55, textDecoration: u.completed ? 'line-through' : 'none', wordBreak: 'break-word' }}>
+          {u.description}
+        </div>
+        {/* Comments */}
+        {(cmts.length > 0 || hasComments) ? (
+          <div className="ut-comments" style={{ marginTop: '.4rem' }}>
+            {hasComments && cmts.map((c: any) => (
+              <div key={c.id} className="ut-cmt">
+                <div className="ut-cmt-avatar">{initials(c.user_name)}</div>
+                <div className="ut-cmt-body">
+                  <div className="ut-cn">{c.user_name}</div>
+                  <div className="ut-ct">{c.content}</div>
+                </div>
+              </div>
+            ))}
+            {hasComments && (
+              <div className="ut-cmt-compose">
+                <input
+                  type="text"
+                  placeholder="Reply…"
+                  value={commentDrafts[u.id] ?? ''}
+                  onChange={e => setCommentDrafts(prev => ({ ...prev, [u.id]: e.target.value }))}
+                  onKeyDown={e => { if (e.key === 'Enter') handleComment(u.id) }}
+                />
+              </div>
+            )}
+            <button
+              className="ut-cmt-toggle"
+              onClick={() => setShowComments(prev => {
+                const next = new Set(prev); next.has(u.id) ? next.delete(u.id) : next.add(u.id); return next
+              })}
+            >
+              {hasComments ? 'Hide' : `${cmts.length} comment${cmts.length !== 1 ? 's' : ''}`}
+            </button>
+          </div>
+        ) : (
+          <button
+            className="ut-cmt-toggle"
+            onClick={() => setShowComments(prev => { const next = new Set(prev); next.add(u.id); return next })}
+          >
+            Comments
+          </button>
+        )}
+      </td>
+
+      {/* ASSIGNED TO */}
+      <td style={{ fontSize: '.72rem', color: 'var(--text-2)' }}>
+        {u.assigned_to || '—'}
+      </td>
+
+      {/* WAITING ON */}
+      <td style={{ fontSize: '.72rem', color: 'var(--text-2)' }}>
+        {u.waiting_on ? <span className="ut-waiting-chip">{u.waiting_on}</span> : '—'}
+      </td>
+
+      {/* TARGET DATE */}
+      <td style={{ fontSize: '.72rem', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>
+        {u.target_date ? fmt(u.target_date) : '—'}
+      </td>
+
+      {/* DAYS LEFT */}
+      <td>
+        {daysLeft !== null ? (
+          <span className={daysClass(daysLeft, u.completed)} style={{ fontSize: '.65rem' }}>
+            {u.completed ? '✓' : daysLeft === 0 ? 'Today' : daysLeft > 0 ? `${daysLeft}d` : `${Math.abs(daysLeft)}d over`}
+          </span>
+        ) : '—'}
+      </td>
+
+      {/* DONE */}
+      <td>
+        <input
+          type="checkbox"
+          className="done-checkbox"
+          checked={!!u.completed}
+          onChange={() => { if (!u.completed) handleComplete(u.id) }}
+          readOnly={u.completed}
+        />
+      </td>
+
+      {/* LINKS */}
+      <td>
+        {rowLinks.length > 0 ? (
+          <a href={rowLinks[0].startsWith('http') ? rowLinks[0] : `https://${rowLinks[0]}`} target="_blank" rel="noreferrer" title={rowLinks[0]} style={{ color: 'var(--blue-l)', display: 'inline-flex', alignItems: 'center' }}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+            </svg>
+          </a>
+        ) : '—'}
+        {/* Delete for creator */}
+        {u.user_email === user.email && (
+          <button
+            className="icon-btn icon-btn-danger"
+            style={{ width: 22, height: 22, borderRadius: 5, marginLeft: 4 }}
+            onClick={() => handleDelete(u.id)}
+            title="Delete"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+              <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+            </svg>
+          </button>
+        )}
+      </td>
+    </tr>
   )
 }

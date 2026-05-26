@@ -156,6 +156,10 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
           teamList={teamList}
           onClose={() => setSelectedId(null)}
           onRefresh={load}
+          onComplete={() => {
+            const initiative = initiatives.find(i => i.id === selectedId)
+            if (initiative) { setCompleteTarget(initiative); setSelectedId(null) }
+          }}
         />
       )}
 
