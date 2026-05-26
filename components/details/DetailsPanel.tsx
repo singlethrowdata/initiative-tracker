@@ -174,10 +174,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
           <div className="dp-hero-card">
             <div className="dp-hero-left">
               <div className="dp-hero-st-logo">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <path d="M3 9h18M9 21V9" />
-                </svg>
+                <img src="/ICONSTM_White.png" alt="Single Throw" style={{ width: 48, height: 48, objectFit: 'contain' }} />
               </div>
               <div className="dp-hero-st-label">SINGLE THROW</div>
               <div className="dp-hero-type-badge">{initiative.type}</div>
