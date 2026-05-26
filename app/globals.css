@@ -142,7 +142,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 .cmt-avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-bg);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.58rem;color:var(--blue-l);flex-shrink:0}
 .cmt-body{flex:1}.cmt-body .cn{font-weight:700;font-size:.76rem}.cmt-body .ct{color:var(--text-2);font-size:.8rem;line-height:1.55;margin-top:.1rem}.cmt-body .cd{color:var(--text-3);font-size:.62rem;font-weight:500;margin-top:.15rem}
 .cmt-compose{display:flex;gap:.5rem;margin-top:.5rem}
-.cmt-compose input{flex:1;background:var(--bg);border:1.5px solid transparent;border-radius:100px;padding:.55rem 1rem;font-family:var(--font);font-size:.78rem;color:var(--text);transition:all .2s}
+.cmt-compose>div{flex:1;min-width:0}
+.cmt-compose input{width:100%;background:var(--bg);border:1.5px solid transparent;border-radius:100px;padding:.55rem 1rem;font-family:var(--font);font-size:.78rem;color:var(--text);transition:all .2s}
 .cmt-compose input:focus{outline:none;border-color:var(--blue-l);background:var(--bg-w)}
 .cmt-compose button{border-radius:100px;padding:.55rem 1.2rem}
 
