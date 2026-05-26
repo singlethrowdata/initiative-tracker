@@ -200,20 +200,16 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
         {concernOpen.has(post.id) && (
           <div className="concern-compose">
             <div className="concern-compose-label">Flag a concern — explain your reasoning (required)</div>
-            <div className={concernError.has(post.id) ? 'concern-input-error' : ''}>
-              <MentionInput
-                value={concernDrafts[post.id] ?? ''}
-                onChange={(v) => {
-                  setConcernDrafts(prev => ({ ...prev, [post.id]: v }))
-                  if (v.trim()) setConcernError(prev => { const n = new Set(prev); n.delete(post.id); return n })
-                }}
-                onEnter={() => handleConcern(post.id)}
-                placeholder="Describe your concern…"
-                teamList={teamList}
-                multiline
-                rows={4}
-              />
-            </div>
+            <textarea
+              rows={4}
+              placeholder="Describe your concern…"
+              value={concernDrafts[post.id] ?? ''}
+              onChange={e => {
+                const v = e.target.value
+                setConcernDrafts(prev => ({ ...prev, [post.id]: v }))
+                if (v.trim()) setConcernError(prev => { const n = new Set(prev); n.delete(post.id); return n })
+              }}
+            />
             {concernError.has(post.id) && (
               <div className="concern-error">You must explain your concern before submitting.</div>
             )}
