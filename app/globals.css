@@ -143,7 +143,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;d
 .btn-resolve:hover{background:rgba(22,163,74,0.12);border-color:rgba(22,163,74,0.35)!important}
 .btn-tracker-done{color:var(--blue);background:var(--blue-bg);border-color:var(--border)!important;opacity:.7}
 .resolved-badge{display:inline-flex;align-items:center;background:rgba(22,163,74,0.15);color:#15803d;border:1px solid rgba(22,163,74,0.25);font-size:.55rem;font-weight:800;padding:.18rem .5rem;border-radius:100px;letter-spacing:.06em;text-transform:uppercase;margin-left:.5rem}
-.post.post-resolved{opacity:.55}
+.post.post-resolved{opacity:.75}
 .resolved-section-toggle{display:flex;align-items:center;gap:.5rem;width:100%;padding:.75rem 1.1rem;border-radius:12px;border:1.5px dashed var(--border);background:transparent;font-family:var(--font);font-size:.8rem;font-weight:700;color:var(--text-3);cursor:pointer;margin-bottom:.25rem;transition:all .2s ease}
 .resolved-section-toggle:hover{background:var(--bg-w);border-color:var(--border-hover);color:var(--text-2)}
 .resolved-section-toggle svg{stroke:currentColor;flex-shrink:0}
