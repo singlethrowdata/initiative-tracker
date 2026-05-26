@@ -60,8 +60,8 @@ export default function Home() {
           </div>
         </a>
         <div className="nav-right">
-          <a className="back-btn" href="https://singlethrow.com/internalhome">← Hub</a>
           <span style={{ fontSize: '.75rem', color: 'var(--text-3)', fontWeight: 600 }}>{user.name}</span>
+          <a className="back-btn" href="https://singlethrow.com/internalhome">← Hub</a>
           <button className="back-btn" onClick={() => signOut({ callbackUrl: '/login' })}>
             Sign out
           </button>
