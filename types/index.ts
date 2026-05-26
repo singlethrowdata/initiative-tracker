@@ -101,6 +101,7 @@ export interface CommunityPost {
   updated_at: string
   likes: number
   liked_by_user?: boolean
+  is_resolved: boolean
 }
 
 export interface CommunityComment {

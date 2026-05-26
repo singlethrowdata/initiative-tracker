@@ -23,6 +23,9 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
   const [concernOpen, setConcernOpen] = useState<Set<string>>(new Set())
   const [concernDrafts, setConcernDrafts] = useState<Record<string, string>>({})
   const [concernError, setConcernError] = useState<Set<string>>(new Set())
+  const submittingComments = useRef<Set<string>>(new Set())
+  const [submittingSet, setSubmittingSet] = useState<Set<string>>(new Set())
+  const [transferredPosts, setTransferredPosts] = useState<Set<string>>(new Set())
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -55,17 +58,24 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
 
   async function handleComment(postId: string) {
     const text = commentDrafts[postId]?.trim()
-    if (!text) return
-    const res = await fetch(`/api/community/${postId}/comments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ content: text }),
-    })
-    const comment = await res.json()
-    setPosts(prev => prev.map(p =>
-      p.id === postId ? { ...p, community_comments: [...(p.community_comments ?? []), comment] } : p
-    ))
-    setCommentDrafts(prev => ({ ...prev, [postId]: '' }))
+    if (!text || submittingComments.current.has(postId)) return
+    submittingComments.current.add(postId)
+    setSubmittingSet(new Set(submittingComments.current))
+    try {
+      const res = await fetch(`/api/community/${postId}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: text }),
+      })
+      const comment = await res.json()
+      setPosts(prev => prev.map(p =>
+        p.id === postId ? { ...p, community_comments: [...(p.community_comments ?? []), comment] } : p
+      ))
+      setCommentDrafts(prev => ({ ...prev, [postId]: '' }))
+    } finally {
+      submittingComments.current.delete(postId)
+      setSubmittingSet(new Set(submittingComments.current))
+    }
   }
 
   async function handleConcern(postId: string) {
@@ -115,6 +125,28 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
     setPosts(prev => prev.filter(p => p.id !== postId))
   }
 
+  async function handleResolve(postId: string) {
+    const res = await fetch(`/api/community/${postId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ is_resolved: true }),
+    })
+    if (res.ok) {
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_resolved: true } : p))
+    }
+  }
+
+  async function handleTransfer(post: typeof posts[number]) {
+    const res = await fetch('/api/initiatives', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_name: post.title, description: post.content ?? '' }),
+    })
+    if (res.ok) {
+      setTransferredPosts(prev => new Set(prev).add(post.id))
+    }
+  }
+
   async function handleDeleteComment(postId: string, commentId: string) {
     if (!confirm('Delete this comment?')) return
     await fetch(`/api/community/${postId}/comments/${commentId}`, { method: 'DELETE' })
@@ -130,12 +162,16 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
   const isRecent = (d: string) => (now - new Date(d).getTime()) < ONE_MONTH_MS
 
   const recent = [...posts]
-    .filter(p => isRecent(p.created_at))
+    .filter(p => isRecent(p.created_at) && !p.is_resolved)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const ranked = [...posts]
-    .filter(p => !isRecent(p.created_at))
+    .filter(p => !isRecent(p.created_at) && !p.is_resolved)
     .sort((a, b) => b.likes - a.likes)
+
+  const resolved = [...posts]
+    .filter(p => p.is_resolved)
+    .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
 
   const renderPost = (post: typeof posts[number], idx: number, showRank: boolean) => {
     const rankClass = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : 'rn'
@@ -144,8 +180,10 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
     const isNew = (Date.now() - new Date(post.created_at).getTime()) < 86_400_000 * 2
     const commentCount = post.community_comments?.length ?? 0
 
+    const isTransferred = transferredPosts.has(post.id)
+
     return (
-      <div key={post.id} className="post">
+      <div key={post.id} className={`post${post.is_resolved ? ' post-resolved' : ''}`}>
         <div className="post-head">
           <div className="post-avatar"><div className="post-avatar-inner">{initials(post.user_name)}</div></div>
           <div className="post-info">
@@ -154,6 +192,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
               {post.user_name}
               {isOwner && <span className="post-owner-badge">You</span>}
               {isNew && <span className="new-badge">New</span>}
+              {post.is_resolved && <span className="resolved-badge">Resolved</span>}
             </div>
             <div className="pdate">{fmtRelative(post.created_at)}</div>
           </div>
@@ -190,11 +229,23 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
           >
             Concern
           </button>
-          {(isOwner || canDelete) && (
-            <div className="post-bar-right">
+          <div className="post-bar-right">
+            <button
+              className={`btn btn-xs${isTransferred ? ' btn-tracker-done' : ' btn-soft'}`}
+              onClick={() => !isTransferred && handleTransfer(post)}
+              disabled={isTransferred}
+            >
+              {isTransferred ? 'In Tracker ✓' : 'Send to Tracker'}
+            </button>
+            {(isOwner || canDelete) && !post.is_resolved && (
+              <button className="btn btn-soft btn-xs btn-resolve" onClick={() => handleResolve(post.id)}>
+                Resolve
+              </button>
+            )}
+            {(isOwner || canDelete) && (
               <button className="btn btn-danger-o btn-xs" onClick={() => handleDelete(post.id)}>Delete</button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {concernOpen.has(post.id) && (
@@ -256,7 +307,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
                 placeholder="Add a comment… (use @ to tag teammates)"
                 teamList={teamList}
               />
-              <button className="btn btn-soft btn-sm" onClick={() => handleComment(post.id)}>Reply</button>
+              <button className="btn btn-soft btn-sm" onClick={() => handleComment(post.id)} disabled={submittingSet.has(post.id)}>{submittingSet.has(post.id) ? 'Posting…' : 'Reply'}</button>
             </div>
           </div>
         )}
@@ -321,6 +372,12 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
             <>
               <h2 className="community-section-h">Top Ideas</h2>
               {ranked.map((post, idx) => renderPost(post, idx, true))}
+            </>
+          )}
+          {resolved.length > 0 && (
+            <>
+              <h2 className="community-section-h">Resolved</h2>
+              {resolved.map((post, idx) => renderPost(post, idx, false))}
             </>
           )}
         </>
