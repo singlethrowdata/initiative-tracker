@@ -41,6 +41,11 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
   const [showEdit, setShowEdit] = useState(false)
 
   useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
+  useEffect(() => {
     fetch(`/api/initiatives/${initiativeId}`)
       .then(r => r.json())
       .then(data => {
