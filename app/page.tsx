@@ -51,7 +51,9 @@ export default function Home() {
 
       <nav>
         <a className="logo" href="/">
-          <img src="/ICONSTM_White.png" alt="Single Throw" className="logo-img" />
+          <div className="logo-icon">
+            <img src="/ICONSTM_White.png" alt="Single Throw" className="logo-img" />
+          </div>
           <div className="logo-text">
             Single Throw
             <small>Initiative Tracker</small>
