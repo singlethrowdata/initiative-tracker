@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Initiative, TeamMember } from '@/types'
+import ParticipantSelect from '@/components/shared/ParticipantSelect'
 
 interface Props {
   user: { email: string; name: string }
@@ -100,6 +101,9 @@ export default function CreateInitiativeModal({ user, teamList, onClose, onCreat
               <input type="date" value={form.anticipated_end_date} onChange={e => set('anticipated_end_date', e.target.value)} />
             </div>
           </div>
+
+          <label className="modal-label">Participants</label>
+          <ParticipantSelect teamList={teamList} value={form.participants} onChange={v => set('participants', v)} />
 
           <label className="modal-label">Description</label>
           <textarea placeholder="What is this initiative about?" value={form.description} onChange={e => set('description', e.target.value)} rows={3} />
