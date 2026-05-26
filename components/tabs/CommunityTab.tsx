@@ -134,6 +134,9 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
     })
     if (res.ok) {
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_resolved: true } : p))
+      setResolvedExpanded(true)
+    } else {
+      console.error('Resolve failed:', res.status, await res.text())
     }
   }
 
