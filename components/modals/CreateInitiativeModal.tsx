@@ -14,7 +14,7 @@ interface Props {
 const TYPES = ['Project', 'Process', 'Training', 'Research', 'Other']
 const PRIORITIES = ['High', 'Medium', 'Low']
 const STATUSES = ['Not Started', 'In Progress', 'Planning', 'Blocked']
-const DEPARTMENTS = ['Marketing', 'Tech', 'Sales', 'Operations', 'Leadership', 'Finance', 'HR', 'Other']
+const DEPARTMENTS = ['Operations', 'Content', 'SEO', 'Design', 'CRO', 'Data & Innovation', 'Account Managers', 'Sales', 'Finance', 'Paid', 'Executive Assistant', 'Organization']
 
 export default function CreateInitiativeModal({ user, teamList, onClose, onCreated, initialValues }: Props) {
   const [form, setForm] = useState({
