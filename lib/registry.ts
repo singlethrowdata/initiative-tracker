@@ -2,9 +2,6 @@ import { google } from 'googleapis'
 import { TeamMember } from '@/types'
 
 const SHEET_ID = process.env.DOC_REGISTRY_SHEET_ID!
-const CACHE_TTL = 5 * 60 * 1000
-
-let cache: { data: TeamMember[]; ts: number } | null = null
 
 function getSheets() {
   const auth = new google.auth.GoogleAuth({
@@ -26,8 +23,6 @@ function findCol(headers: string[], ...patterns: RegExp[]): number {
 }
 
 export async function getRegistryTeam(): Promise<TeamMember[]> {
-  if (cache && Date.now() - cache.ts < CACHE_TTL) return cache.data
-
   try {
     const sheets = getSheets()
     const res = await sheets.spreadsheets.values.get({
@@ -77,7 +72,6 @@ export async function getRegistryTeam(): Promise<TeamMember[]> {
       })
     }
 
-    cache = { data: members, ts: Date.now() }
     return members
   } catch (e) {
     console.error('Failed to read Employee Directory:', e)
@@ -85,6 +79,3 @@ export async function getRegistryTeam(): Promise<TeamMember[]> {
   }
 }
 
-export function invalidateRegistryCache() {
-  cache = null
-}
