@@ -5,6 +5,7 @@ import { CommunityPost, CommunityComment, TeamMember } from '@/types'
 import { initials, fmtRelative } from '@/lib/ui'
 import MentionInput from '@/components/shared/MentionInput'
 import MentionText from '@/components/shared/MentionText'
+import CreateInitiativeModal from '@/components/modals/CreateInitiativeModal'
 
 interface Props {
   user: { email: string; name: string }
@@ -26,6 +27,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
   const submittingComments = useRef<Set<string>>(new Set())
   const [submittingSet, setSubmittingSet] = useState<Set<string>>(new Set())
   const [transferredPosts, setTransferredPosts] = useState<Set<string>>(new Set())
+  const [transferTarget, setTransferTarget] = useState<typeof posts[number] | null>(null)
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
 
   const load = useCallback(async () => {
@@ -145,15 +147,8 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
     }
   }
 
-  async function handleTransfer(post: typeof posts[number]) {
-    const res = await fetch('/api/initiatives', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task_name: post.title, description: post.content ?? '' }),
-    })
-    if (res.ok) {
-      setTransferredPosts(prev => new Set(prev).add(post.id))
-    }
+  function handleTransfer(post: typeof posts[number]) {
+    setTransferTarget(post)
   }
 
   async function handleDeleteComment(postId: string, commentId: string) {
@@ -397,6 +392,19 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
             </>
           )}
         </>
+      )}
+
+      {transferTarget && (
+        <CreateInitiativeModal
+          user={user}
+          teamList={teamList}
+          initialValues={{ task_name: transferTarget.title, description: transferTarget.content ?? '' }}
+          onClose={() => setTransferTarget(null)}
+          onCreated={() => {
+            setTransferredPosts(prev => new Set(prev).add(transferTarget.id))
+            setTransferTarget(null)
+          }}
+        />
       )}
     </>
   )

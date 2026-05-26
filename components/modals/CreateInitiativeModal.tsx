@@ -8,6 +8,7 @@ interface Props {
   teamList: TeamMember[]
   onClose: () => void
   onCreated: (i: Initiative) => void
+  initialValues?: { task_name?: string; description?: string }
 }
 
 const TYPES = ['Project', 'Process', 'Training', 'Research', 'Other']
@@ -15,14 +16,14 @@ const PRIORITIES = ['High', 'Medium', 'Low']
 const STATUSES = ['Not Started', 'In Progress', 'Planning', 'Blocked']
 const DEPARTMENTS = ['Marketing', 'Tech', 'Sales', 'Operations', 'Leadership', 'Finance', 'HR', 'Other']
 
-export default function CreateInitiativeModal({ user, teamList, onClose, onCreated }: Props) {
+export default function CreateInitiativeModal({ user, teamList, onClose, onCreated, initialValues }: Props) {
   const [form, setForm] = useState({
-    task_name: '',
+    task_name: initialValues?.task_name ?? '',
     type: 'Project',
     priority: 'Medium',
     status: 'Not Started',
     department: '',
-    description: '',
+    description: initialValues?.description ?? '',
     notes: '',
     participants: '',
     links: '',
