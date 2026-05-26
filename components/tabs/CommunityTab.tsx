@@ -26,6 +26,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
   const submittingComments = useRef<Set<string>>(new Set())
   const [submittingSet, setSubmittingSet] = useState<Set<string>>(new Set())
   const [transferredPosts, setTransferredPosts] = useState<Set<string>>(new Set())
+  const [resolvedExpanded, setResolvedExpanded] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -376,8 +377,15 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
           )}
           {resolved.length > 0 && (
             <>
-              <h2 className="community-section-h">Resolved</h2>
-              {resolved.map((post, idx) => renderPost(post, idx, false))}
+              <button
+                className="resolved-section-toggle"
+                onClick={() => setResolvedExpanded(v => !v)}
+              >
+                <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, transition: 'transform .2s', transform: resolvedExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><path d="M6 9l6 6 6-6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+                Resolved
+                <span className="resolved-section-count">{resolved.length}</span>
+              </button>
+              {resolvedExpanded && resolved.map((post, idx) => renderPost(post, idx, false))}
             </>
           )}
         </>
