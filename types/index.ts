@@ -66,6 +66,15 @@ export interface UpdateComment {
   created_at: string
 }
 
+export interface NoteComment {
+  id: string
+  note_id: string
+  user_email: string
+  user_name: string
+  content: string
+  created_at: string
+}
+
 export interface InitiativeNote {
   id: string
   initiative_id: string
@@ -73,6 +82,7 @@ export interface InitiativeNote {
   user_name: string
   content: string
   created_at: string
+  note_comments: NoteComment[]
 }
 
 export interface PersonalNote {

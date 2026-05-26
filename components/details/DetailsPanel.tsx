@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Initiative, TeamMember, InitiativeNote } from '@/types'
+import { Initiative, TeamMember, InitiativeNote, NoteComment } from '@/types'
 import { fmt, fmtRelative, initials, statusClass, priorityClass, parseLinks, daysBetween } from '@/lib/ui'
 import UpdatesExpand from '@/components/shared/UpdatesExpand'
 
@@ -34,6 +34,8 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
   const [posting, setPosting] = useState(false)
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
+  const [noteCommentDrafts, setNoteCommentDrafts] = useState<Record<string, string>>({})
+  const [showNoteComments, setShowNoteComments] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     fetch(`/api/initiatives/${initiativeId}`)
@@ -81,6 +83,21 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
     setNotes(prev => prev.map(n => n.id === noteId ? updated : n))
     setNoteEditId(null)
     setNoteEditDraft('')
+  }
+
+  async function handleNoteComment(noteId: string) {
+    const text = noteCommentDrafts[noteId]?.trim()
+    if (!text) return
+    const res = await fetch(`/api/initiatives/${initiativeId}/notes/${noteId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: text }),
+    })
+    const comment: NoteComment = await res.json()
+    setNotes(prev => prev.map(n =>
+      n.id === noteId ? { ...n, note_comments: [...(n.note_comments ?? []), comment] } : n
+    ))
+    setNoteCommentDrafts(prev => ({ ...prev, [noteId]: '' }))
   }
 
   async function handleLinkAdd() {
@@ -272,13 +289,44 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
                   ) : (
                     <>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '.84rem', color: 'var(--text-2)', lineHeight: 1.65, marginBottom: '.4rem' }}>{n.content}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                          <div className="dp-participant-avatar" style={{ width: 22, height: 22, fontSize: '.45rem', background: PARTICIPANT_GRADS[0], flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.5rem' }}>
+                          <div className="dp-participant-avatar" style={{ width: 24, height: 24, fontSize: '.48rem', background: PARTICIPANT_GRADS[0], flexShrink: 0 }}>
                             {initials(n.user_name)}
                           </div>
-                          <span style={{ fontSize: '.68rem', fontWeight: 700 }}>{n.user_name}</span>
+                          <span style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--text)' }}>{n.user_name}</span>
                           <span style={{ fontSize: '.63rem', color: 'var(--text-3)' }}>{fmtRelative(n.created_at)}</span>
+                        </div>
+                        <div style={{ fontSize: '.84rem', color: 'var(--text-2)', lineHeight: 1.65, marginBottom: '.5rem' }}>{n.content}</div>
+                        {/* Comments */}
+                        <div className="ut-comments">
+                          {showNoteComments.has(n.id) && (n.note_comments ?? []).map((c: NoteComment) => (
+                            <div key={c.id} className="ut-cmt">
+                              <div className="ut-cmt-avatar">{initials(c.user_name)}</div>
+                              <div className="ut-cmt-body">
+                                <div className="ut-cn">{c.user_name}</div>
+                                <div className="ut-ct">{c.content}</div>
+                              </div>
+                            </div>
+                          ))}
+                          {showNoteComments.has(n.id) && (
+                            <div className="ut-cmt-compose">
+                              <input
+                                type="text"
+                                placeholder="Reply…"
+                                value={noteCommentDrafts[n.id] ?? ''}
+                                onChange={e => setNoteCommentDrafts(prev => ({ ...prev, [n.id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter') handleNoteComment(n.id) }}
+                              />
+                            </div>
+                          )}
+                          <button
+                            className="ut-cmt-toggle"
+                            onClick={() => setShowNoteComments(prev => {
+                              const next = new Set(prev); next.has(n.id) ? next.delete(n.id) : next.add(n.id); return next
+                            })}
+                          >
+                            {showNoteComments.has(n.id) ? 'Hide' : (n.note_comments?.length ?? 0) > 0 ? `${n.note_comments.length} comment${n.note_comments.length !== 1 ? 's' : ''}` : 'Comment'}
+                          </button>
                         </div>
                       </div>
                       {n.user_email === user.email && (

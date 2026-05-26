@@ -31,7 +31,23 @@ export async function GET(_req: Request, { params }: Params) {
       GROUP BY u.id
       ORDER BY u.created_at DESC
     `,
-    sql`SELECT * FROM initiative_notes WHERE initiative_id = ${id} ORDER BY created_at DESC`,
+    sql`
+      SELECT n.*,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', nc.id, 'note_id', nc.note_id, 'user_email', nc.user_email,
+              'user_name', nc.user_name, 'content', nc.content, 'created_at', nc.created_at
+            ) ORDER BY nc.created_at
+          ) FILTER (WHERE nc.id IS NOT NULL),
+          '[]'::json
+        ) AS note_comments
+      FROM initiative_notes n
+      LEFT JOIN note_comments nc ON nc.note_id = n.id
+      WHERE n.initiative_id = ${id}
+      GROUP BY n.id
+      ORDER BY n.created_at DESC
+    `,
   ])
 
   if (!initiative) return NextResponse.json({ error: 'Not found' }, { status: 404 })

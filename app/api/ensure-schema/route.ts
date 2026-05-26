@@ -8,5 +8,15 @@ export async function GET() {
 
   await sql`ALTER TABLE community_comments ADD COLUMN IF NOT EXISTS is_concern BOOLEAN DEFAULT FALSE`
   await sql`ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS is_resolved BOOLEAN DEFAULT FALSE`
+  await sql`
+    CREATE TABLE IF NOT EXISTS note_comments (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      note_id UUID NOT NULL REFERENCES initiative_notes(id) ON DELETE CASCADE,
+      user_email TEXT NOT NULL,
+      user_name TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
   return NextResponse.json({ ok: true })
 }
