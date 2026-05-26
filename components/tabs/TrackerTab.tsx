@@ -68,13 +68,14 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
     <>
       <div className="tracker-wrap">
         <div className="tracker-top">
-          <h3>Active Initiatives ({filtered.length})</h3>
+          <h3>Initiative Tracker</h3>
           <div className="tracker-top-btns">
             <button className="btn btn-soft btn-sm" onClick={() => window.location.href = '/api/export'}>
-              Export CSV
+              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, marginRight: 4 }}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>
+              Export
             </button>
             <button className="btn btn-grad btn-sm" onClick={() => setShowCreate(true)}>
-              + New Initiative
+              + Add Initiative
             </button>
           </div>
         </div>
@@ -109,15 +110,11 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
           <table>
             <thead>
               <tr>
-                <th style={{ width: 28 }} />
-                <th style={{ width: '22%' }}>Initiative</th>
-                <th style={{ width: '10%' }}>Status</th>
-                <th style={{ width: '7%' }}>Priority</th>
-                <th style={{ width: '8%' }}>Type</th>
-                <th style={{ width: '10%' }}>Dept</th>
-                <th style={{ width: '12%' }}>Waiting On</th>
-                <th style={{ width: '8%' }}>Due</th>
-                <th style={{ width: '13%' }}>Description</th>
+                <th style={{ width: '11%' }}>Status</th>
+                <th style={{ width: '18%' }}>Initiative</th>
+                <th style={{ width: '35%' }}>Description</th>
+                <th style={{ width: '16%' }}>Participants</th>
+                <th style={{ width: '10%' }}>Target End</th>
                 <th style={{ width: '10%' }}>Actions</th>
               </tr>
             </thead>
