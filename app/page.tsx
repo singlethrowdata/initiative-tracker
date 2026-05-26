@@ -51,9 +51,7 @@ export default function Home() {
 
       <nav>
         <a className="logo" href="/">
-          <div className="logo-icon">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" /></svg>
-          </div>
+          <img src="/ICONSTM_White.png" alt="Single Throw" className="logo-img" />
           <div className="logo-text">
             Single Throw
             <small>Initiative Tracker</small>
