@@ -334,13 +334,13 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .participant-chips{display:flex;flex-wrap:wrap;gap:4px}
 .participant-chip{display:inline-flex;align-items:center;background:var(--blue-bg);color:var(--blue);font-size:.65rem;font-weight:700;padding:.2rem .55rem;border-radius:100px;white-space:nowrap}
 .row-actions{display:flex;align-items:center;gap:4px}
-.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-w);color:var(--text-3);cursor:pointer;transition:all .2s ease;flex-shrink:0}
-.icon-btn svg{width:13px;height:13px}
-.icon-btn:hover{border-color:var(--border-hover);color:var(--blue-l);background:var(--blue-bg)}
-.icon-btn-success{color:var(--green)}
-.icon-btn-success:hover{border-color:var(--green-l);color:var(--green);background:var(--green-bg)}
-.icon-btn-danger{color:var(--danger)}
-.icon-btn-danger:hover{border-color:rgba(217,79,79,0.3);background:var(--danger-bg)}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border-hover);background:var(--bg-w);color:var(--text-2);cursor:pointer;transition:all .2s ease;flex-shrink:0}
+.icon-btn svg{width:14px;height:14px}
+.icon-btn:hover{border-color:var(--blue-l);color:var(--blue-l);background:var(--blue-bg)}
+.icon-btn-success{color:var(--green);border-color:var(--green-l)}
+.icon-btn-success:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.icon-btn-danger{color:var(--danger);border-color:rgba(217,79,79,0.3)}
+.icon-btn-danger:hover{border-color:var(--danger);background:var(--danger-bg)}
 .dp-notes-stream{padding:1.25rem 1.75rem;border-top:1px solid var(--border)}
 .dp-notes-label{font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3);display:flex;align-items:center;gap:.4rem}
 .dp-note-entry{background:var(--bg);border-radius:10px;padding:.85rem 1rem;margin-bottom:.55rem;border-left:3px solid var(--blue-l)}
