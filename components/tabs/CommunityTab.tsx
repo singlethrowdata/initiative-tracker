@@ -127,16 +127,21 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
   }
 
   async function handleResolve(postId: string) {
-    const res = await fetch(`/api/community/${postId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_resolved: true }),
-    })
-    if (res.ok) {
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_resolved: true } : p))
-      setResolvedExpanded(true)
-    } else {
-      console.error('Resolve failed:', res.status, await res.text())
+    try {
+      const res = await fetch(`/api/community/${postId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_resolved: true }),
+      })
+      if (res.ok) {
+        setPosts(prev => prev.map(p => p.id === postId ? { ...p, is_resolved: true } : p))
+        setResolvedExpanded(true)
+      } else {
+        const err = await res.text()
+        alert(`Resolve failed (${res.status}): ${err}`)
+      }
+    } catch (e) {
+      alert(`Resolve error: ${e}`)
     }
   }
 
