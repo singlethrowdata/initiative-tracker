@@ -32,6 +32,7 @@ export async function POST(req: Request, { params }: Params) {
       completion_links = ${body.tool_link ?? ''},
       participants = ${body.participants ?? initiative.participants},
       completion_requester_email = ${email},
+      completion_requester_name = ${requesterName},
       updated_at = ${new Date().toISOString()}
     WHERE id = ${id}
   `

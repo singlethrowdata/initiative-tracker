@@ -40,8 +40,10 @@ export async function GET(req: Request, { params }: Params) {
       WHERE id = ${initiative.id}
     `
 
-    // Write to Doc Registry (SOP) and Tech Stack (tool link) sheets
-    await Promise.all([
+    const completedByName = (initiative.completion_requester_name ?? initiative.created_by_name ?? '') as string
+
+    // Fire-and-forget — sheet writes shouldn't block the confirmation page
+    Promise.all([
       appendToDocRegistry({
         task_name: initiative.task_name as string,
         department: (initiative.department ?? '') as string,
@@ -49,7 +51,7 @@ export async function GET(req: Request, { params }: Params) {
         completion_desc: (initiative.completion_desc ?? '') as string,
         sop_link: (initiative.sop_link ?? '') as string,
         created_by_name: (initiative.created_by_name ?? '') as string,
-        completed_by_name: (initiative.completed_by_name ?? '') as string,
+        completed_by_name: completedByName,
         completed_at: now,
       }),
       appendToTechStack({
@@ -60,10 +62,10 @@ export async function GET(req: Request, { params }: Params) {
         participants: (initiative.participants ?? '') as string,
         sop_link: (initiative.sop_link ?? '') as string,
         completion_links: (initiative.completion_links ?? '') as string,
-        completed_by_name: (initiative.completed_by_name ?? '') as string,
+        completed_by_name: completedByName,
         completed_at: now,
       }),
-    ])
+    ]).catch(err => console.error('Sheet write failed:', err))
 
     const approvedRecipients = [...new Set([
       initiative.completion_requester_email as string,

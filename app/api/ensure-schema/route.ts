@@ -7,6 +7,7 @@ export async function GET() {
   if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS completion_requester_email TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS completion_requester_name TEXT`
   await sql`ALTER TABLE community_comments ADD COLUMN IF NOT EXISTS is_concern BOOLEAN DEFAULT FALSE`
   await sql`ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS is_resolved BOOLEAN DEFAULT FALSE`
   await sql`
