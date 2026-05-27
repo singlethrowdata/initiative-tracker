@@ -12,7 +12,7 @@ interface Props {
   initialValues?: { task_name?: string; description?: string }
 }
 
-const TYPES = ['Project', 'Process', 'Training', 'Research', 'Other']
+const TYPES = ['Tool', 'Process', 'Campaign', 'Other']
 const PRIORITIES = ['High', 'Medium', 'Low']
 const STATUSES = ['Not Started', 'In Progress', 'Planning', 'Blocked']
 const DEPARTMENTS = ['Operations', 'Content', 'SEO', 'Design', 'CRO', 'Data & Innovation', 'Account Managers', 'Sales', 'Finance', 'Paid', 'Executive Assistant', 'Organization']

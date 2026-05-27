@@ -16,7 +16,7 @@ interface Props {
 
 const STATUSES = ['All', 'Not Started', 'In Progress', 'Blocked', 'Awaiting Approval', 'Approved']
 const PRIORITIES = ['All', 'High', 'Medium', 'Low']
-const TYPES = ['All', 'Project', 'Process', 'Training', 'Research', 'Other']
+const TYPES = ['All', 'Tool', 'Process', 'Campaign', 'Other']
 
 export default function TrackerTab({ user, canDelete, teamList }: Props) {
   const [initiatives, setInitiatives] = useState<Initiative[]>([])
