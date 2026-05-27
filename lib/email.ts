@@ -1,7 +1,7 @@
-import { getSession } from '@/lib/session'
-import { sql } from '@/lib/db'
+import { Resend } from 'resend'
 
-// Gmail API via the logged-in user's OAuth token, stored in DB at sign-in.
+const resend = new Resend(process.env.RESEND_API_KEY)
+const FROM = process.env.RESEND_FROM ?? 'noreply@singlethrow.com'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 const header = (title: string) =>
@@ -16,59 +16,17 @@ const card = (body: string) =>
 
 const footer = `<p style="color:#8899A6;font-size:11px;margin:10px 0 0">Single Throw Initiative Tracker</p>`
 
-function buildRawMessage(from: string, to: string, subject: string, html: string, text: string) {
-  const boundary = `b_${Date.now()}_${Math.random().toString(36).slice(2)}`
-  const message =
-    `From: ${from}\r\n` +
-    `To: ${to}\r\n` +
-    `Subject: ${subject}\r\n` +
-    `MIME-Version: 1.0\r\n` +
-    `Content-Type: multipart/alternative; boundary="${boundary}"\r\n` +
-    `\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: text/plain; charset="UTF-8"\r\n\r\n` +
-    `${text}\r\n` +
-    `--${boundary}\r\n` +
-    `Content-Type: text/html; charset="UTF-8"\r\n\r\n` +
-    `${html}\r\n` +
-    `--${boundary}--`
-  return Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-export async function send(to: string, subject: string, html: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function send(to: string, subject: string, html: string): Promise<{ ok: boolean; error?: string }> {
   try {
-    const session = await getSession()
-    const from = session?.user?.email
-    if (!from) return { ok: false, error: 'No session' }
-
-    const [row] = await sql`
-      SELECT gmail_access_token FROM team_members WHERE email = ${from.toLowerCase()}
-    `
-    const accessToken = row?.gmail_access_token as string | undefined
-    if (!accessToken) {
-      console.error(`Email send skipped: no gmail_access_token for ${from} — sign out and sign in again`)
-      return { ok: false, error: 'No Gmail token. Sign out and sign in again to grant access.' }
-    }
-
-    const raw = buildRawMessage(from, to, subject, html, text)
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ raw }),
-    })
-
-    if (!res.ok) {
-      const text = await res.text()
-      console.error(`Email send failed → to=${to} from=${from}: ${res.status} ${text}`)
-      return { ok: false, error: `${res.status}: ${text}` }
+    const { error } = await resend.emails.send({ from: FROM, to, subject, html })
+    if (error) {
+      console.error('Resend error:', error)
+      return { ok: false, error: error.message }
     }
     return { ok: true }
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e)
-    console.error(`Email send threw → to=${to}: ${msg}`)
+    console.error('Resend threw:', msg)
     return { ok: false, error: msg }
   }
 }
@@ -82,7 +40,7 @@ export async function sendMentionEmail(
       <p style="color:#1A5276;font-size:15px;font-weight:700;margin:0 0 12px">${contextTitle}</p>
       <div style="background:#F4F6F8;border-radius:8px;padding:14px;margin:0 0 16px;color:#4A6274;font-size:13px;line-height:1.6">${bodyText}</div>
       ${footer}`)
-  await send(toEmail, `${authorName} mentioned you in ${contextType}: ${contextTitle}`, `${authorName} mentioned you: ${bodyText}`, html)
+  await send(toEmail, `${authorName} mentioned you in ${contextType}: ${contextTitle}`, html)
 }
 
 export async function sendWaitingOnEmail(
@@ -102,7 +60,7 @@ export async function sendWaitingOnEmail(
       <div style="background:#FFF3E0;border-left:4px solid #F5A623;border-radius:4px;padding:14px;margin:0 0 16px;color:#4A6274;font-size:13px;line-height:1.6">
         This initiative is blocked until your input or action is received.
       </div>${footer}`)
-  await send(toEmail, `Action needed — ${requestedByName} is waiting on you: ${initiativeName}`, `${requestedByName} is waiting on you for: ${initiativeName}`, html)
+  await send(toEmail, `Action needed — ${requestedByName} is waiting on you: ${initiativeName}`, html)
 }
 
 export async function sendWaitingOnReminderEmail(
@@ -129,7 +87,7 @@ export async function sendWaitingOnReminderEmail(
       <p style="color:#8899A6;font-size:11px;margin:0">Weekly reminder until resolved.</p>
     </div>
   </div>`
-  await send(toEmail, `Reminder (${daysPending}d): Waiting — ${initiativeName}`, `Reminder: ${daysPending} days — ${initiativeName}`, html)
+  await send(toEmail, `Reminder (${daysPending}d): Waiting — ${initiativeName}`, html)
 }
 
 export async function sendApprovalRequestEmail(
@@ -170,7 +128,7 @@ export async function sendApprovalRequestEmail(
 
   const recipients = ['nstryker@singlethrow.com', 'tech@singlethrow.com']
   for (const recipient of recipients) {
-    await send(recipient, `Approval Required — Complete Initiative: ${taskName}`, `${requesterName} is requesting approval to complete "${taskName}".`, html)
+    await send(recipient, `Approval Required — Complete Initiative: ${taskName}`, html)
   }
 }
 
@@ -197,7 +155,7 @@ export async function sendApprovalDecisionEmail(
     </div>
   </div>`
 
-  await send(toEmail, `${statusWord} — Initiative Completion: ${taskName}`, `${statusWord}: ${taskName}${comment ? ` | Feedback: ${comment}` : ''}`, html)
+  await send(toEmail, `${statusWord} — Initiative Completion: ${taskName}`, html)
 }
 
 export async function sendCommunityMilestoneEmail(
@@ -213,7 +171,7 @@ export async function sendCommunityMilestoneEmail(
       </div>
       <p style="color:#4A6274;font-size:13px;line-height:1.6;margin:0 0 12px">When you're ready to move forward, please add this to the <strong>Initiative Tracker</strong> so it can be properly scoped, assigned, and tracked.</p>
       ${footer}`)
-  await send(toEmail, `Your idea hit 10 upvotes — time to add it to the Tracker: ${postTitle}`, 'Your community idea has 10 upvotes! Head to the Initiative Tracker to add it as a project.', html)
+  await send(toEmail, `Your idea hit 10 upvotes — time to add it to the Tracker: ${postTitle}`, html)
 }
 
 export async function sendTaskCompletedEmail(
@@ -230,7 +188,7 @@ export async function sendTaskCompletedEmail(
       ${footer}
     </div>
   </div>`
-  await send(toEmail, `Task completed: ${taskName}`, `${completedBy} marked a task as done in ${taskName}: ${description}`, html)
+  await send(toEmail, `Task completed: ${taskName}`, html)
 }
 
 export async function sendNewCommunityPostEmail(
@@ -252,6 +210,6 @@ export async function sendNewCommunityPostEmail(
 
   for (const r of recipients) {
     if (r.email === authorEmail) continue
-    await send(r.email, `${authorName} posted on Community: ${postTitle}`, `${authorName} posted: ${postTitle}\n\n${postContent}`, html)
+    await send(r.email, `${authorName} posted on Community: ${postTitle}`, html)
   }
 }
