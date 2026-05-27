@@ -22,6 +22,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!finalSummary.trim()) { setError('Please provide a completion summary.'); return }
+    if (!sopLink.trim()) { setError('SOP / Documentation link is required.'); return }
     setSaving(true)
     setError('')
     const res = await fetch(`/api/initiatives/${initiative.id}/complete`, {
@@ -55,7 +56,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
             autoFocus
           />
 
-          <label className="modal-label">SOP / Documentation Link</label>
+          <label className="modal-label">SOP / Documentation Link <span className="req">*</span></label>
           <input type="text" placeholder="https://…" value={sopLink} onChange={e => setSopLink(e.target.value)} />
 
           <label className="modal-label">Tool / Resource Link</label>
