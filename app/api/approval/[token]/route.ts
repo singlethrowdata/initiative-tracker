@@ -65,8 +65,15 @@ export async function GET(req: Request, { params }: Params) {
       }),
     ])
 
-    await sendApprovalDecisionEmail(
-      initiative.created_by as string, initiative.task_name as string, 'approved'
+    const approvedRecipients = [...new Set([
+      initiative.completion_requester_email as string,
+      initiative.created_by as string,
+    ].filter(Boolean))]
+    await Promise.all(
+      approvedRecipients.map(email =>
+        sendApprovalDecisionEmail(email, initiative.task_name as string, 'approved')
+          .catch(err => console.error('Approval email failed to', email, err))
+      )
     )
     return new Response(
       `<html><body style="font-family:Arial;max-width:500px;margin:60px auto;text-align:center">
@@ -94,7 +101,8 @@ export async function POST(req: Request, { params }: Params) {
   const body = await req.json()
 
   const [initiative] = await sql`
-    SELECT id, task_name, created_by FROM initiatives WHERE approval_token = ${token}
+    SELECT id, task_name, created_by, completion_requester_email
+    FROM initiatives WHERE approval_token = ${token}
   `
   if (!initiative) return NextResponse.json({ error: 'Invalid token' }, { status: 404 })
 
@@ -106,8 +114,19 @@ export async function POST(req: Request, { params }: Params) {
       updated_at = ${new Date().toISOString()}
     WHERE id = ${initiative.id}
   `
-  await sendApprovalDecisionEmail(
-    initiative.created_by as string, initiative.task_name as string, 'denied', body.comment
+
+  // Send to whoever submitted the completion request + the original creator (deduplicated)
+  const recipients = [...new Set([
+    initiative.completion_requester_email as string,
+    initiative.created_by as string,
+  ].filter(Boolean))]
+
+  await Promise.all(
+    recipients.map(email =>
+      sendApprovalDecisionEmail(email, initiative.task_name as string, 'denied', body.comment)
+        .catch(err => console.error('Denial email failed to', email, err))
+    )
   )
+
   return NextResponse.json({ success: true })
 }
