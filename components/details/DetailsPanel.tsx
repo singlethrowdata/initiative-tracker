@@ -202,10 +202,12 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
         </div>
         {initiative && (
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-            <button className="btn btn-grad btn-sm" onClick={onComplete}>
-              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M20 6L9 17l-5-5" /></svg>
-              Complete
-            </button>
+            {initiative.status !== 'Awaiting Approval' && initiative.status !== 'Approved' && (
+              <button className="btn btn-grad btn-sm" onClick={onComplete}>
+                <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M20 6L9 17l-5-5" /></svg>
+                Complete
+              </button>
+            )}
             <button className="btn btn-soft btn-sm" onClick={() => setShowEdit(true)}>
               <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               Edit
@@ -269,6 +271,20 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
             </div>
           </div>
 
+          {/* Awaiting Approval banner */}
+          {initiative.status === 'Awaiting Approval' && (
+            <div className="dp-approved-banner" style={{ background: 'rgba(249,200,75,0.12)', borderColor: '#D4920A' }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="#D4920A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <div style={{ color: '#8a6000' }}>
+                <strong>Awaiting Approval</strong> — This initiative has been submitted for completion and is pending leadership review.
+              </div>
+            </div>
+          )}
+
           {/* Approved banner */}
           {initiative.status === 'Approved' && (
             <div className="dp-approved-banner">
@@ -277,7 +293,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
                 <path d="M9 12l2 2 4-4" />
               </svg>
               <div>
-                <strong>Approved for Completion</strong> — This initiative has been approved for completion. Click <strong>Complete</strong> to finalize it.
+                <strong>Approved for Completion</strong> — This initiative has been approved and is archived.
               </div>
             </div>
           )}
