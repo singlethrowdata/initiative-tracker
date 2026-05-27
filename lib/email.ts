@@ -93,11 +93,14 @@ export async function sendWaitingOnReminderEmail(
 export async function sendApprovalRequestEmail(
   initiativeId: string, taskName: string, token: string,
   participants: string, department: string, requesterName: string,
-  requesterEmail: string, finalSummary?: string, sopLink?: string, toolLink?: string
+  requesterEmail: string, finalSummary?: string, sopLink?: string, toolLink?: string,
+  description?: string, startDate?: string, endDate?: string
 ) {
   const approveUrl = `${APP_URL}/api/approval/${token}?action=approve`
   const denyUrl = `${APP_URL}/api/approval/${token}?action=deny`
   const initiativeUrl = `${APP_URL}?tab=tracker&id=${initiativeId}`
+
+  const fmtDate = (d?: string) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'
 
   let linksHtml = ''
   if (sopLink?.trim()) linksHtml += `<a href="${sopLink}" style="display:inline-block;margin:4px 8px 4px 0;padding:8px 16px;background:#1A5276;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700">View SOP</a>`
@@ -112,9 +115,14 @@ export async function sendApprovalRequestEmail(
     <div style="background:#fff;padding:24px;border:1px solid #ddd;border-top:none;border-radius:0 0 10px 10px">
       <p style="color:#1B2A3B;font-size:13px;margin:0 0 16px"><strong>${requesterName}</strong> is requesting approval to mark the following initiative as complete${department ? ` (${department})` : ''}:</p>
       <div style="background:#F4F6F8;border-radius:10px;padding:18px;margin:0 0 18px">
-        <div style="font-size:18px;font-weight:800;color:#1A5276;margin-bottom:12px">${taskName}</div>
-        ${finalSummary ? `<div style="font-size:13px;color:#1B2A3B;line-height:1.75">${finalSummary}</div>` : ''}
-        ${participants ? `<div style="font-size:12px;color:#4A6274;margin-top:10px"><strong>Participants:</strong> ${participants}</div>` : ''}
+        <div style="font-size:18px;font-weight:800;color:#1A5276;margin-bottom:10px">${taskName}</div>
+        ${description ? `<div style="font-size:13px;color:#4A6274;line-height:1.7;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #DDE3EA">${description}</div>` : ''}
+        <div style="display:flex;gap:24px;margin-bottom:${participants || finalSummary ? '12px' : '0'}">
+          <div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#8899A6;margin-bottom:2px">Start Date</div><div style="font-size:13px;font-weight:700;color:#1B2A3B">${fmtDate(startDate)}</div></div>
+          <div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#8899A6;margin-bottom:2px">Target End</div><div style="font-size:13px;font-weight:700;color:#1B2A3B">${fmtDate(endDate)}</div></div>
+        </div>
+        ${participants ? `<div style="font-size:12px;color:#4A6274;margin-bottom:${finalSummary ? '12px' : '0'}"><strong>Participants:</strong> ${participants}</div>` : ''}
+        ${finalSummary ? `<div style="margin-top:4px;padding:12px;background:#fff;border-left:3px solid #2980B9;border-radius:4px"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#1A5276;margin-bottom:4px">Completion Summary</div><div style="font-size:13px;color:#1B2A3B;line-height:1.7">${finalSummary}</div></div>` : ''}
       </div>
       <div style="margin-bottom:20px">${linksHtml}</div>
       <div style="background:#F0F4F8;border-radius:10px;padding:16px 20px;text-align:center">

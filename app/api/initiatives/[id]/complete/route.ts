@@ -45,7 +45,10 @@ export async function POST(req: Request, { params }: Params) {
     email,
     body.final_summary,
     body.sop_link,
-    body.tool_link
+    body.tool_link,
+    (initiative.description ?? '') as string,
+    (initiative.start_date ?? '') as string,
+    (initiative.anticipated_end_date ?? '') as string,
   ).catch(console.error)
 
   return NextResponse.json({ success: true })
