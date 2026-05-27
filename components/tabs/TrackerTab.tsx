@@ -6,6 +6,7 @@ import DetailsPanel from '@/components/details/DetailsPanel'
 import CreateInitiativeModal from '@/components/modals/CreateInitiativeModal'
 import CompleteModal from '@/components/modals/CompleteModal'
 import ConfirmModal from '@/components/modals/ConfirmModal'
+import EditInitiativeModal from '@/components/modals/EditInitiativeModal'
 import InitiativeRow from '@/components/shared/InitiativeRow'
 
 interface Props {
@@ -29,6 +30,7 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
   const [showCreate, setShowCreate] = useState(false)
   const [completeTarget, setCompleteTarget] = useState<Initiative | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Initiative | null>(null)
+  const [editTarget, setEditTarget] = useState<Initiative | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -137,6 +139,7 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
                   canDelete={canDelete}
                   teamList={teamList}
                   onOpen={() => setSelectedId(initiative.id)}
+                  onEdit={() => setEditTarget(initiative)}
                   onStatusChange={handleStatusChange}
                   onDelete={handleDelete}
                   onComplete={() => setCompleteTarget(initiative)}
@@ -179,6 +182,15 @@ export default function TrackerTab({ user, canDelete, teamList }: Props) {
           teamList={teamList}
           onClose={() => setCompleteTarget(null)}
           onSubmitted={() => { setCompleteTarget(null); load() }}
+        />
+      )}
+
+      {editTarget && (
+        <EditInitiativeModal
+          initiative={editTarget}
+          teamList={teamList}
+          onClose={() => setEditTarget(null)}
+          onSaved={() => { setEditTarget(null); load() }}
         />
       )}
 
