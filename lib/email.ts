@@ -191,6 +191,29 @@ export async function sendTaskCompletedEmail(
   await send(toEmail, `Task completed: ${taskName}`, html)
 }
 
+export async function sendNewCommunityCommentEmail(
+  authorName: string,
+  authorEmail: string,
+  postTitle: string,
+  commentContent: string,
+  recipients: { email: string; display_name: string }[]
+) {
+  const communityUrl = `${APP_URL}?tab=community`
+  const html = header('New Comment on Community Post') +
+    card(`<p style="color:#1B2A3B;font-size:13px;margin:0 0 6px"><strong>${authorName}</strong> commented on a Community post:</p>
+      <div style="background:#F4F6F8;border-radius:8px;padding:14px;margin:0 0 16px">
+        <div style="font-size:13px;font-weight:700;color:#1A5276;margin-bottom:8px">${postTitle}</div>
+        <div style="font-size:13px;color:#4A6274;line-height:1.6;border-left:3px solid #2980B9;padding-left:10px">${commentContent}</div>
+      </div>
+      <a href="${communityUrl}" style="display:inline-block;padding:10px 22px;background:#1A5276;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700">View on Community Board</a>
+      ${footer}`)
+
+  for (const r of recipients) {
+    if (r.email === authorEmail) continue
+    await send(r.email, `${authorName} commented on: ${postTitle}`, html)
+  }
+}
+
 export async function sendNewCommunityPostEmail(
   authorName: string,
   authorEmail: string,

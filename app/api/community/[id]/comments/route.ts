@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { sql } from '@/lib/db'
-import { getMemberName } from '@/lib/team'
+import { getMemberName, getActiveTeam } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
+import { sendNewCommunityCommentEmail } from '@/lib/email'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -32,10 +33,16 @@ export async function POST(req: Request, { params }: Params) {
     RETURNING *
   `
 
-  const [post] = await sql`SELECT title FROM community_posts WHERE id = ${id}`
-  await processAndNotifyMentions(
-    body.content, (post?.title ?? '') as string, 'community comment', userName, email
-  )
+  const [[post], team] = await Promise.all([
+    sql`SELECT title FROM community_posts WHERE id = ${id}`,
+    getActiveTeam(),
+  ])
+
+  const postTitle = (post?.title ?? '') as string
+  await processAndNotifyMentions(body.content, postTitle, 'community comment', userName, email)
+
+  // Fire-and-forget — don't block the response on email delivery
+  sendNewCommunityCommentEmail(userName, email, postTitle, body.content, team).catch(console.error)
 
   return NextResponse.json(data, { status: 201 })
 }

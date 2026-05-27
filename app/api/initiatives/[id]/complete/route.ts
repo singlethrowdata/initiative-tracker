@@ -23,6 +23,7 @@ export async function POST(req: Request, { params }: Params) {
 
   await sql`
     UPDATE initiatives SET
+      status = 'Awaiting Approval',
       approval_status = 'pending',
       approval_token = ${token},
       approval_requested_at = ${new Date().toISOString()},
@@ -34,7 +35,7 @@ export async function POST(req: Request, { params }: Params) {
     WHERE id = ${id}
   `
 
-  await sendApprovalRequestEmail(
+  sendApprovalRequestEmail(
     id,
     initiative.task_name as string,
     token,
@@ -45,7 +46,7 @@ export async function POST(req: Request, { params }: Params) {
     body.final_summary,
     body.sop_link,
     body.tool_link
-  )
+  ).catch(console.error)
 
   return NextResponse.json({ success: true })
 }
