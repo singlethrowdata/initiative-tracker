@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import { sendApprovalDecisionEmail } from '@/lib/email'
+import { appendToDocRegistry, appendToTechStack } from '@/lib/sheets'
 
 type Params = { params: Promise<{ token: string }> }
 
@@ -10,8 +11,7 @@ export async function GET(req: Request, { params }: Params) {
   const action = searchParams.get('action')
 
   const [initiative] = await sql`
-    SELECT id, task_name, created_by, approval_status
-    FROM initiatives WHERE approval_token = ${token}
+    SELECT * FROM initiatives WHERE approval_token = ${token}
   `
 
   if (!initiative) {
@@ -28,16 +28,43 @@ export async function GET(req: Request, { params }: Params) {
   }
 
   if (action === 'approve') {
+    const now = new Date().toISOString()
     await sql`
       UPDATE initiatives SET
         approval_status = 'approved',
         status = 'Approved',
         is_archived = true,
-        archived_at = ${new Date().toISOString()},
+        archived_at = ${now},
         approval_token = null,
-        updated_at = ${new Date().toISOString()}
+        updated_at = ${now}
       WHERE id = ${initiative.id}
     `
+
+    // Write to Doc Registry (SOP) and Tech Stack (tool link) sheets
+    await Promise.all([
+      appendToDocRegistry({
+        task_name: initiative.task_name as string,
+        department: (initiative.department ?? '') as string,
+        description: (initiative.description ?? '') as string,
+        completion_desc: (initiative.completion_desc ?? '') as string,
+        sop_link: (initiative.sop_link ?? '') as string,
+        created_by_name: (initiative.created_by_name ?? '') as string,
+        completed_by_name: (initiative.completed_by_name ?? '') as string,
+        completed_at: now,
+      }),
+      appendToTechStack({
+        task_name: initiative.task_name as string,
+        type: (initiative.type ?? '') as string,
+        department: (initiative.department ?? '') as string,
+        completion_desc: (initiative.completion_desc ?? '') as string,
+        participants: (initiative.participants ?? '') as string,
+        sop_link: (initiative.sop_link ?? '') as string,
+        completion_links: (initiative.completion_links ?? '') as string,
+        completed_by_name: (initiative.completed_by_name ?? '') as string,
+        completed_at: now,
+      }),
+    ])
+
     await sendApprovalDecisionEmail(
       initiative.created_by as string, initiative.task_name as string, 'approved'
     )
