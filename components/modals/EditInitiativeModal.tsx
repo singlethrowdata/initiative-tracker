@@ -8,7 +8,7 @@ interface Props {
   initiative: Initiative
   teamList: TeamMember[]
   onClose: () => void
-  onSaved: (i: Initiative) => void
+  onSaved: () => void
 }
 
 const TYPES = ['Project', 'Process', 'Training', 'Research', 'Other']
@@ -27,8 +27,8 @@ export default function EditInitiativeModal({ initiative, teamList, onClose, onS
     notes: initiative.notes ?? '',
     participants: initiative.participants ?? '',
     links: initiative.links ?? '',
-    start_date: initiative.start_date ?? '',
-    anticipated_end_date: initiative.anticipated_end_date ?? '',
+    start_date: initiative.start_date ? String(initiative.start_date).slice(0, 10) : '',
+    anticipated_end_date: initiative.anticipated_end_date ? String(initiative.anticipated_end_date).slice(0, 10) : '',
     waiting_on: initiative.waiting_on ?? '',
   })
   const [saving, setSaving] = useState(false)
@@ -47,8 +47,7 @@ export default function EditInitiativeModal({ initiative, teamList, onClose, onS
       body: JSON.stringify(form),
     })
     if (!res.ok) { setError('Failed to save. Please try again.'); setSaving(false); return }
-    const saved = await res.json()
-    onSaved(saved)
+    onSaved()
   }
 
   return (

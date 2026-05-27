@@ -595,7 +595,13 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
           initiative={initiative}
           teamList={teamList}
           onClose={() => setShowEdit(false)}
-          onSaved={saved => { setInitiative(saved); setShowEdit(false); onRefresh() }}
+          onSaved={() => {
+              setShowEdit(false)
+              fetch(`/api/initiatives/${initiativeId}`)
+                .then(r => r.json())
+                .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []) })
+              onRefresh()
+            }}
         />
       )}
     </div>
