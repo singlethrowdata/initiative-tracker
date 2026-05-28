@@ -103,6 +103,31 @@ export async function GET(req: Request, { params }: Params) {
       }
     }
 
+    // Push to Tech Stack Hub if this is a Tool initiative with tab filled in
+    if (initiative.type === 'Tool' && initiative.ts_tab) {
+      const tsApiUrl = process.env.TECH_STACK_HUB_URL
+      const tsApiSecret = process.env.TECH_STACK_INTERNAL_SECRET
+      if (tsApiUrl && tsApiSecret) {
+        fetch(`${tsApiUrl}/api/tools/internal`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-secret': tsApiSecret },
+          body: JSON.stringify({
+            tool_name: initiative.task_name as string,
+            tab: initiative.ts_tab as string,
+            description: (initiative.description ?? '') as string,
+            access_url: (initiative.completion_links ?? '') as string,
+            department: (initiative.department ?? '') as string,
+            category: (initiative.ts_category ?? '') as string,
+            use_case: (initiative.ts_use_case ?? '') as string,
+            responsible_for_update: (initiative.ts_responsible ?? '') as string,
+            google_signin: initiative.ts_google_signin ?? false,
+            client_owner: (initiative.ts_client_owner ?? null),
+            created_by: (initiative.completion_requester_email ?? initiative.created_by) as string,
+          }),
+        }).catch(err => console.error('Tech Stack Hub push failed:', err))
+      }
+    }
+
     const approvedRecipients = [...new Set([
       initiative.completion_requester_email as string,
       initiative.created_by as string,

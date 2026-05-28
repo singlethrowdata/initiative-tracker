@@ -38,6 +38,12 @@ export async function POST(req: Request, { params }: Params) {
       doc_context = ${body.doc_context ?? ''},
       doc_owner = ${body.doc_owner ?? ''},
       doc_tags = ${body.doc_tags ?? ''},
+      ts_tab = ${body.ts_tab ?? ''},
+      ts_category = ${body.ts_category ?? ''},
+      ts_use_case = ${body.ts_use_case ?? ''},
+      ts_responsible = ${body.ts_responsible ?? ''},
+      ts_google_signin = ${body.ts_google_signin ?? false},
+      ts_client_owner = ${body.ts_client_owner ?? ''},
       updated_at = ${new Date().toISOString()}
     WHERE id = ${id}
   `

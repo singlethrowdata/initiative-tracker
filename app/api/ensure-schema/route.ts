@@ -13,6 +13,12 @@ export async function GET() {
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS doc_context TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS doc_owner TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS doc_tags TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_tab TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_category TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_use_case TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_responsible TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_google_signin BOOLEAN DEFAULT FALSE`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_client_owner TEXT`
   await sql`ALTER TABLE community_comments ADD COLUMN IF NOT EXISTS is_concern BOOLEAN DEFAULT FALSE`
   await sql`ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS is_resolved BOOLEAN DEFAULT FALSE`
   await sql`

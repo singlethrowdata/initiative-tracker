@@ -13,6 +13,7 @@ interface Props {
 
 const DOC_TYPES = ['SOP', 'GD', 'PB', 'FW', 'WF', 'TEMP', 'POL', 'REF', 'PRE']
 const OWNER_ROLES = ['SEC', 'CMO', 'EVPO', 'COO', 'SDR', 'SEO', 'CRO', 'AM', 'DATA', 'CR', 'CONT', 'FIN', 'PAID', 'WS', 'EA']
+const TS_TABS = ['Internal Tools', 'Client Tools', 'ST Tools']
 
 export default function CompleteModal({ initiative, user, teamList, onClose, onSubmitted }: Props) {
   const [finalSummary, setFinalSummary] = useState('')
@@ -24,10 +25,17 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
   const [docContext, setDocContext] = useState('')
   const [docOwner, setDocOwner] = useState('')
   const [docTags, setDocTags] = useState('')
+  const [tsTab, setTsTab] = useState('')
+  const [tsCategory, setTsCategory] = useState('')
+  const [tsUseCase, setTsUseCase] = useState('')
+  const [tsResponsible, setTsResponsible] = useState('')
+  const [tsGoogleSignin, setTsGoogleSignin] = useState(false)
+  const [tsClientOwner, setTsClientOwner] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   const hasSop = sopLink.trim().length > 0
+  const isTool = initiative.type === 'Tool'
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,6 +45,13 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
       if (!docPurpose.trim()) { setError('Doc Registry: Purpose is required.'); return }
       if (!docContext.trim()) { setError('Doc Registry: Context is required.'); return }
       if (!docOwner) { setError('Doc Registry: Owner role is required.'); return }
+    }
+    if (isTool) {
+      if (!tsTab) { setError('Tech Stack: Tab is required.'); return }
+      if (!tsCategory.trim()) { setError('Tech Stack: Category is required.'); return }
+      if (!tsUseCase.trim()) { setError('Tech Stack: Use Case is required.'); return }
+      if (!tsResponsible.trim()) { setError('Tech Stack: Responsible for Updates is required.'); return }
+      if (tsTab === 'Client Tools' && !tsClientOwner.trim()) { setError('Tech Stack: Client Owner is required for Client Tools.'); return }
     }
     setSaving(true)
     setError('')
@@ -53,6 +68,12 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
         doc_context: docContext,
         doc_owner: docOwner,
         doc_tags: docTags,
+        ts_tab: tsTab,
+        ts_category: tsCategory,
+        ts_use_case: tsUseCase,
+        ts_responsible: tsResponsible,
+        ts_google_signin: tsGoogleSignin,
+        ts_client_owner: tsClientOwner,
       }),
     })
     if (!res.ok) { setError('Failed to submit. Please try again.'); setSaving(false); return }
@@ -144,6 +165,45 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
                 value={docTags}
                 onChange={e => setDocTags(e.target.value)}
               />
+            </div>
+          )}
+
+          {isTool && (
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: '1rem', paddingTop: '1rem' }}>
+              <div style={{ fontSize: '.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-3)', marginBottom: '.75rem' }}>
+                Tech Stack Details
+              </div>
+
+              <label className="modal-label">Tab <span className="req">*</span></label>
+              <select value={tsTab} onChange={e => setTsTab(e.target.value)}>
+                <option value="">Select tab…</option>
+                {TS_TABS.map(t => <option key={t}>{t}</option>)}
+              </select>
+
+              {tsTab === 'Client Tools' && (
+                <>
+                  <label className="modal-label">Client Owner <span className="req">*</span></label>
+                  <input type="text" placeholder="Which client owns this tool?" value={tsClientOwner} onChange={e => setTsClientOwner(e.target.value)} />
+                </>
+              )}
+
+              <label className="modal-label">
+                Category <span className="req">*</span>
+                <span style={{ fontSize: '.68rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>e.g. SEO, Analytics, CRM</span>
+              </label>
+              <input type="text" placeholder="e.g. Analytics" value={tsCategory} onChange={e => setTsCategory(e.target.value)} />
+
+              <label className="modal-label">Use Case <span className="req">*</span></label>
+              <input type="text" placeholder="What problem does this tool solve?" value={tsUseCase} onChange={e => setTsUseCase(e.target.value)} />
+
+              <label className="modal-label">Responsible for Updates <span className="req">*</span></label>
+              <input type="text" placeholder="Who maintains this tool?" value={tsResponsible} onChange={e => setTsResponsible(e.target.value)} />
+
+              <label className="modal-label">Uses Google Sign-In?</label>
+              <select value={tsGoogleSignin ? 'true' : 'false'} onChange={e => setTsGoogleSignin(e.target.value === 'true')}>
+                <option value="false">No</option>
+                <option value="true">Yes</option>
+              </select>
             </div>
           )}
 
