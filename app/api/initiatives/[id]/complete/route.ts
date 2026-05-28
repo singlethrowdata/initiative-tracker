@@ -33,6 +33,11 @@ export async function POST(req: Request, { params }: Params) {
       participants = ${body.participants ?? initiative.participants},
       completion_requester_email = ${email},
       completion_requester_name = ${requesterName},
+      doc_type = ${body.doc_type ?? 'SOP'},
+      doc_purpose = ${body.doc_purpose ?? ''},
+      doc_context = ${body.doc_context ?? ''},
+      doc_owner = ${body.doc_owner ?? ''},
+      doc_tags = ${body.doc_tags ?? ''},
       updated_at = ${new Date().toISOString()}
     WHERE id = ${id}
   `

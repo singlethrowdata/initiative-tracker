@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import { sendApprovalDecisionEmail } from '@/lib/email'
 import { appendToDocRegistry, appendToTechStack } from '@/lib/sheets'
+import { getActiveTeam } from '@/lib/team'
+
+const DEPT_CODE: Record<string, string> = {
+  'Operations': 'OPS', 'Content': 'CONT', 'SEO': 'SEO', 'Design': 'CR',
+  'CRO': 'CRO', 'Data & Innovation': 'DATA', 'Account Managers': 'AM',
+  'Sales': 'SDR', 'Finance': 'FIN', 'Paid': 'PAID',
+  'Executive Assistant': 'EA', 'Organization': 'ORG',
+}
 
 type Params = { params: Promise<{ token: string }> }
 
@@ -66,6 +74,34 @@ export async function GET(req: Request, { params }: Params) {
         completed_at: now,
       }),
     ]).catch(err => console.error('Sheet write failed:', err))
+
+    // Push to Doc Registry if SOP link + doc fields were provided
+    if (initiative.sop_link && initiative.doc_purpose && initiative.doc_context && initiative.doc_owner) {
+      const docApiUrl = process.env.DOC_REGISTRY_API_URL
+      const docApiSecret = process.env.DOC_REGISTRY_INTERNAL_SECRET
+      if (docApiUrl && docApiSecret) {
+        const team = await getActiveTeam()
+        const visibleToEmails = team.map((m: { email: string }) => m.email).filter(Boolean)
+        fetch(`${docApiUrl}/api/internal/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-api-secret': docApiSecret },
+          body: JSON.stringify({
+            formData: {
+              documentType: (initiative.doc_type ?? 'SOP') as string,
+              department: DEPT_CODE[(initiative.department ?? '') as string] ?? (initiative.department ?? '') as string,
+              purpose: initiative.doc_purpose as string,
+              context: initiative.doc_context as string,
+              owner: initiative.doc_owner as string,
+              summary: (initiative.completion_desc ?? initiative.description ?? '') as string,
+              fileLink: initiative.sop_link as string,
+              tags: (initiative.doc_tags ?? '') as string,
+              visibleToEmails,
+            },
+            userEmail: (initiative.completion_requester_email ?? initiative.created_by) as string,
+          }),
+        }).catch(err => console.error('Doc Registry push failed:', err))
+      }
+    }
 
     const approvedRecipients = [...new Set([
       initiative.completion_requester_email as string,

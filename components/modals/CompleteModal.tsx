@@ -11,24 +11,49 @@ interface Props {
   onSubmitted: () => void
 }
 
+const DOC_TYPES = ['SOP', 'GD', 'PB', 'FW', 'WF', 'TEMP', 'POL', 'REF', 'PRE']
+const OWNER_ROLES = ['SEC', 'CMO', 'EVPO', 'COO', 'SDR', 'SEO', 'CRO', 'AM', 'DATA', 'CR', 'CONT', 'FIN', 'PAID', 'WS', 'EA']
+
 export default function CompleteModal({ initiative, user, teamList, onClose, onSubmitted }: Props) {
   const [finalSummary, setFinalSummary] = useState('')
   const [sopLink, setSopLink] = useState(initiative.sop_link ?? '')
   const [toolLink, setToolLink] = useState(initiative.completion_links ?? '')
   const [participants, setParticipants] = useState(initiative.participants ?? '')
+  const [docType, setDocType] = useState('SOP')
+  const [docPurpose, setDocPurpose] = useState('')
+  const [docContext, setDocContext] = useState('')
+  const [docOwner, setDocOwner] = useState('')
+  const [docTags, setDocTags] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
+  const hasSop = sopLink.trim().length > 0
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!finalSummary.trim()) { setError('Please provide a completion summary.'); return }
     if (!sopLink.trim()) { setError('SOP / Documentation link is required.'); return }
+    if (hasSop) {
+      if (!docPurpose.trim()) { setError('Doc Registry: Purpose is required.'); return }
+      if (!docContext.trim()) { setError('Doc Registry: Context is required.'); return }
+      if (!docOwner) { setError('Doc Registry: Owner role is required.'); return }
+    }
     setSaving(true)
     setError('')
     const res = await fetch(`/api/initiatives/${initiative.id}/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ final_summary: finalSummary, sop_link: sopLink, tool_link: toolLink, participants }),
+      body: JSON.stringify({
+        final_summary: finalSummary,
+        sop_link: sopLink,
+        tool_link: toolLink,
+        participants,
+        doc_type: docType,
+        doc_purpose: docPurpose,
+        doc_context: docContext,
+        doc_owner: docOwner,
+        doc_tags: docTags,
+      }),
     })
     if (!res.ok) { setError('Failed to submit. Please try again.'); setSaving(false); return }
     onSubmitted()
@@ -69,6 +94,58 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
             value={participants}
             onChange={e => setParticipants(e.target.value)}
           />
+
+          {hasSop && (
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: '1rem', paddingTop: '1rem' }}>
+              <div style={{ fontSize: '.68rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-3)', marginBottom: '.75rem' }}>
+                Doc Registry Details
+              </div>
+
+              <label className="modal-label">Document Type <span className="req">*</span></label>
+              <select value={docType} onChange={e => setDocType(e.target.value)}>
+                {DOC_TYPES.map(t => <option key={t}>{t}</option>)}
+              </select>
+
+              <label className="modal-label">
+                Purpose <span className="req">*</span>
+                <span style={{ fontSize: '.68rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>e.g. Onboarding, ClientReporting</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. Onboarding"
+                value={docPurpose}
+                onChange={e => setDocPurpose(e.target.value)}
+              />
+
+              <label className="modal-label">
+                Context <span className="req">*</span>
+                <span style={{ fontSize: '.68rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>e.g. NewHires, AllTeams</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. AllTeams"
+                value={docContext}
+                onChange={e => setDocContext(e.target.value)}
+              />
+
+              <label className="modal-label">Document Owner <span className="req">*</span></label>
+              <select value={docOwner} onChange={e => setDocOwner(e.target.value)}>
+                <option value="">Select owner role…</option>
+                {OWNER_ROLES.map(r => <option key={r}>{r}</option>)}
+              </select>
+
+              <label className="modal-label">
+                Tags
+                <span style={{ fontSize: '.68rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>(optional, comma-separated)</span>
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. onboarding, HR, process"
+                value={docTags}
+                onChange={e => setDocTags(e.target.value)}
+              />
+            </div>
+          )}
 
           {error && <p style={{ color: 'var(--danger)', fontSize: '.8rem', marginBottom: '.5rem' }}>{error}</p>}
 
