@@ -93,7 +93,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
 
   return (
     <div className="overlay show" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="modal">
+      <div className="modal" style={{ overflow: 'hidden' }}>
         <div className="complete-header">
           <div className="check-circle">
             <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" /></svg>
@@ -103,7 +103,8 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
         <p style={{ fontSize: '.82rem', color: 'var(--text-2)', marginBottom: '1.25rem', lineHeight: 1.6 }}>
           Submitting <strong>{initiative.task_name}</strong> for approval. An email will be sent to leadership for review.
         </p>
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
+          <div style={{ overflowY: 'auto', flex: 1, paddingRight: '.25rem' }}>
           <label className="modal-label">Final Summary <span className="req">*</span></label>
           <textarea
             placeholder="Summarize what was accomplished, outcomes, and impact…"
@@ -224,7 +225,9 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
             </div>
           )}
 
-          {error && <p style={{ color: 'var(--danger)', fontSize: '.8rem', marginBottom: '.5rem' }}>{error}</p>}
+          </div>
+
+          {error && <p style={{ color: 'var(--danger)', fontSize: '.8rem', margin: '.5rem 0 0' }}>{error}</p>}
 
           <div className="modal-foot">
             <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
