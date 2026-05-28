@@ -90,7 +90,7 @@ export default function Home() {
             <TrackerTab user={user} canDelete={canDelete} teamList={teamList} />
           )}
           {tab === 'archive' && (
-            <ArchiveTab user={user} canDelete={canDelete} />
+            <ArchiveTab user={user} canDelete={canDelete} teamList={teamList} />
           )}
           {tab === 'community' && (
             <CommunityTab user={user} canDelete={canDelete} teamList={teamList} />
