@@ -80,8 +80,9 @@ export async function GET(req: Request, { params }: Params) {
       const docApiUrl = process.env.DOC_REGISTRY_API_URL
       const docApiSecret = process.env.DOC_REGISTRY_INTERNAL_SECRET
       if (docApiUrl && docApiSecret) {
-        const team = await getActiveTeam()
-        const visibleToEmails = team.map((m: { email: string }) => m.email).filter(Boolean)
+        const visibleToEmails = initiative.doc_visible_to
+          ? (initiative.doc_visible_to as string).split(',').map((e: string) => e.trim()).filter(Boolean)
+          : await getActiveTeam().then((t: { email: string }[]) => t.map(m => m.email).filter(Boolean))
         fetch(`${docApiUrl}/api/internal/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-secret': docApiSecret },

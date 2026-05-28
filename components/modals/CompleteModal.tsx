@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Initiative, TeamMember } from '@/types'
 
 interface Props {
@@ -28,8 +28,20 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
   const [sopLink, setSopLink] = useState(initiative.sop_link ?? '')
   const [toolLink, setToolLink] = useState(initiative.completion_links ?? '')
   const [participants, setParticipants] = useState(initiative.participants ?? '')
+  const allEmails = teamList.map(m => m.email).filter(Boolean)
   const [docType, setDocType] = useState('SOP')
   const [docDepartment, setDocDepartment] = useState(DEPT_CODE[initiative.department ?? ''] ?? '')
+  const [docVisibleTo, setDocVisibleTo] = useState<string[]>(allEmails)
+  const [visOpen, setVisOpen] = useState(false)
+  const visRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (visRef.current && !visRef.current.contains(e.target as Node)) setVisOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
   const [docPurpose, setDocPurpose] = useState('')
   const [docContext, setDocContext] = useState('')
   const [docOwner, setDocOwner] = useState('')
@@ -75,6 +87,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
         participants,
         doc_type: docType,
         doc_department: docDepartment,
+        doc_visible_to: docVisibleTo.join(','),
         doc_purpose: docPurpose,
         doc_context: docContext,
         doc_owner: docOwner,
@@ -144,6 +157,45 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
                 <option value="">Select department…</option>
                 {DOC_DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
               </select>
+
+              <label className="modal-label">Visible To <span className="req">*</span></label>
+              <div ref={visRef} style={{ position: 'relative', marginBottom: '.85rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setVisOpen(o => !o)}
+                  style={{ width: '100%', background: 'var(--bg)', border: '1.5px solid var(--border)', borderRadius: 12, padding: '.75rem 1rem', fontFamily: 'var(--font)', fontSize: '.85rem', color: 'var(--text)', textAlign: 'left', cursor: 'pointer' }}
+                >
+                  {docVisibleTo.length === 0 ? 'No one selected'
+                    : docVisibleTo.length === allEmails.length ? 'All team members'
+                    : `${docVisibleTo.length} member${docVisibleTo.length !== 1 ? 's' : ''} selected`}
+                </button>
+                {visOpen && (
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 100, background: 'var(--bg-w)', border: '1.5px solid var(--border)', borderRadius: 12, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', maxHeight: 200, overflowY: 'auto', padding: '.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => setDocVisibleTo(docVisibleTo.length === allEmails.length ? [] : allEmails)}
+                      style={{ width: '100%', textAlign: 'left', padding: '.4rem .6rem', fontSize: '.72rem', fontWeight: 700, color: 'var(--blue-l)', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 6, marginBottom: '.25rem' }}
+                    >
+                      {docVisibleTo.length === allEmails.length ? 'Deselect all' : 'Select all'}
+                    </button>
+                    {teamList.map(m => (
+                      <label key={m.email} style={{ display: 'flex', alignItems: 'center', gap: '.5rem', padding: '.35rem .6rem', fontSize: '.82rem', cursor: 'pointer', borderRadius: 6, color: 'var(--text)' }}>
+                        <input
+                          type="checkbox"
+                          checked={docVisibleTo.includes(m.email)}
+                          onChange={() => {
+                            setDocVisibleTo(prev =>
+                              prev.includes(m.email) ? prev.filter(e => e !== m.email) : [...prev, m.email]
+                            )
+                          }}
+                          style={{ width: 14, height: 14, accentColor: 'var(--blue-l)', flexShrink: 0 }}
+                        />
+                        {m.display_name || m.email}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <label className="modal-label">
                 Purpose <span className="req">*</span>

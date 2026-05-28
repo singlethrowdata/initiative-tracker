@@ -35,6 +35,7 @@ export async function POST(req: Request, { params }: Params) {
       completion_requester_name = ${requesterName},
       doc_type = ${body.doc_type ?? 'SOP'},
       doc_department = ${body.doc_department ?? ''},
+      doc_visible_to = ${body.doc_visible_to ?? ''},
       doc_purpose = ${body.doc_purpose ?? ''},
       doc_context = ${body.doc_context ?? ''},
       doc_owner = ${body.doc_owner ?? ''},
