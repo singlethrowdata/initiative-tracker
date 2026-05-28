@@ -15,6 +15,7 @@ const DOC_TYPES = ['SOP', 'GD', 'PB', 'FW', 'WF', 'TEMP', 'POL', 'REF', 'PRE']
 const OWNER_ROLES = ['SEC', 'CMO', 'EVPO', 'COO', 'SDR', 'SEO', 'CRO', 'AM', 'DATA', 'CR', 'CONT', 'FIN', 'PAID', 'WS', 'EA']
 const DOC_DEPARTMENTS = ['ORG', 'SDR', 'OPS', 'AM', 'DATA', 'CR', 'SEO', 'CRO', 'FIN', 'CONT', 'WS', 'PAID', 'EA']
 const TS_TABS = ['Internal Tools', 'Client Tools', 'ST Tools']
+const TS_DEPARTMENTS = ['ORG', 'SEO', 'Content', 'Paid Media', 'CRO', 'Dev & Support', 'Creative', 'Account Management', 'Data', 'Sales', 'SDR', 'OPS']
 
 const DEPT_CODE: Record<string, string> = {
   'Operations': 'OPS', 'Content': 'CONT', 'SEO': 'SEO', 'Design': 'CR',
@@ -47,10 +48,10 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
   const [docOwner, setDocOwner] = useState('')
   const [docTags, setDocTags] = useState('')
   const [tsTab, setTsTab] = useState('')
-  const [tsCategory, setTsCategory] = useState('')
-  const [tsUseCase, setTsUseCase] = useState('')
+  const [tsDepartments, setTsDepartments] = useState<string[]>([])
   const [tsResponsible, setTsResponsible] = useState('')
-  const [tsGoogleSignin, setTsGoogleSignin] = useState(false)
+  const [tsUsername, setTsUsername] = useState('')
+  const [tsNotes, setTsNotes] = useState('')
   const [tsClientOwner, setTsClientOwner] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -70,9 +71,8 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
     }
     if (isTool) {
       if (!tsTab) { setError('Tech Stack: Tab is required.'); return }
-      if (!tsCategory.trim()) { setError('Tech Stack: Category is required.'); return }
-      if (!tsUseCase.trim()) { setError('Tech Stack: Use Case is required.'); return }
-      if (!tsResponsible.trim()) { setError('Tech Stack: Responsible for Updates is required.'); return }
+      if (tsDepartments.length === 0) { setError('Tech Stack: At least one department is required.'); return }
+      if (!tsResponsible) { setError('Tech Stack: Responsible for Update is required.'); return }
       if (tsTab === 'Client Tools' && !tsClientOwner.trim()) { setError('Tech Stack: Client Owner is required for Client Tools.'); return }
     }
     setSaving(true)
@@ -93,10 +93,10 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
         doc_owner: docOwner,
         doc_tags: docTags,
         ts_tab: tsTab,
-        ts_category: tsCategory,
-        ts_use_case: tsUseCase,
+        ts_departments: tsDepartments.join(','),
         ts_responsible: tsResponsible,
-        ts_google_signin: tsGoogleSignin,
+        ts_username: tsUsername,
+        ts_notes: tsNotes,
         ts_client_owner: tsClientOwner,
       }),
     })
@@ -252,28 +252,39 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
 
               {tsTab === 'Client Tools' && (
                 <>
-                  <label className="modal-label">Client Owner <span className="req">*</span></label>
+                  <label className="modal-label">Client / Owner <span className="req">*</span></label>
                   <input type="text" placeholder="Which client owns this tool?" value={tsClientOwner} onChange={e => setTsClientOwner(e.target.value)} />
                 </>
               )}
 
-              <label className="modal-label">
-                Category <span className="req">*</span>
-                <span style={{ fontSize: '.68rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>e.g. SEO, Analytics, CRM</span>
-              </label>
-              <input type="text" placeholder="e.g. Analytics" value={tsCategory} onChange={e => setTsCategory(e.target.value)} />
+              <label className="modal-label">Department(s) <span className="req">*</span></label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '.4rem', marginBottom: '.85rem' }}>
+                {TS_DEPARTMENTS.map(d => (
+                  <label key={d} style={{ display: 'flex', alignItems: 'center', gap: '.3rem', fontSize: '.78rem', cursor: 'pointer', background: tsDepartments.includes(d) ? 'var(--blue-l)' : 'var(--bg)', color: tsDepartments.includes(d) ? '#fff' : 'var(--text-2)', border: '1.5px solid', borderColor: tsDepartments.includes(d) ? 'var(--blue-l)' : 'var(--border)', borderRadius: 8, padding: '.3rem .65rem', userSelect: 'none' }}>
+                    <input
+                      type="checkbox"
+                      style={{ display: 'none' }}
+                      checked={tsDepartments.includes(d)}
+                      onChange={() => setTsDepartments(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])}
+                    />
+                    {d}
+                  </label>
+                ))}
+              </div>
 
-              <label className="modal-label">Use Case <span className="req">*</span></label>
-              <input type="text" placeholder="What problem does this tool solve?" value={tsUseCase} onChange={e => setTsUseCase(e.target.value)} />
-
-              <label className="modal-label">Responsible for Updates <span className="req">*</span></label>
-              <input type="text" placeholder="Who maintains this tool?" value={tsResponsible} onChange={e => setTsResponsible(e.target.value)} />
-
-              <label className="modal-label">Uses Google Sign-In?</label>
-              <select value={tsGoogleSignin ? 'true' : 'false'} onChange={e => setTsGoogleSignin(e.target.value === 'true')}>
-                <option value="false">No</option>
-                <option value="true">Yes</option>
+              <label className="modal-label">Responsible for Update <span className="req">*</span></label>
+              <select value={tsResponsible} onChange={e => setTsResponsible(e.target.value)}>
+                <option value="">Select employee…</option>
+                {teamList.map(m => (
+                  <option key={m.email} value={m.display_name || m.email}>{m.display_name || m.email}</option>
+                ))}
               </select>
+
+              <label className="modal-label">Username</label>
+              <input type="text" placeholder="Login username or email" value={tsUsername} onChange={e => setTsUsername(e.target.value)} />
+
+              <label className="modal-label">Notes</label>
+              <input type="text" placeholder="Any additional notes…" value={tsNotes} onChange={e => setTsNotes(e.target.value)} />
             </div>
           )}
 
