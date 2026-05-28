@@ -25,13 +25,14 @@ export function daysBetween(a: string, b: string): number {
 }
 
 export function statusClass(status: string): string {
-  const s = status.toLowerCase()
+  const s = (status ?? '').toLowerCase().trim()
   if (s === 'planning') return 's-planning'
   if (s === 'in progress') return 's-active'
   if (s === 'not started') return 's-pending'
+  if (s === 'blocked') return 's-blocked'
   if (s === 'completed' || s === 'complete') return 's-complete'
-  if (s.includes('approv') || s.includes('await')) return 's-await'
   if (s === 'approved') return 's-approved'
+  if (s.includes('await') || s.includes('approv')) return 's-await'
   return 's-other'
 }
 
