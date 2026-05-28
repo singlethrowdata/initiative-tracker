@@ -13,7 +13,15 @@ interface Props {
 
 const DOC_TYPES = ['SOP', 'GD', 'PB', 'FW', 'WF', 'TEMP', 'POL', 'REF', 'PRE']
 const OWNER_ROLES = ['SEC', 'CMO', 'EVPO', 'COO', 'SDR', 'SEO', 'CRO', 'AM', 'DATA', 'CR', 'CONT', 'FIN', 'PAID', 'WS', 'EA']
+const DOC_DEPARTMENTS = ['ORG', 'SDR', 'OPS', 'AM', 'DATA', 'CR', 'SEO', 'CRO', 'FIN', 'CONT', 'WS', 'PAID', 'EA']
 const TS_TABS = ['Internal Tools', 'Client Tools', 'ST Tools']
+
+const DEPT_CODE: Record<string, string> = {
+  'Operations': 'OPS', 'Content': 'CONT', 'SEO': 'SEO', 'Design': 'CR',
+  'CRO': 'CRO', 'Data & Innovation': 'DATA', 'Account Managers': 'AM',
+  'Sales': 'SDR', 'Finance': 'FIN', 'Paid': 'PAID',
+  'Executive Assistant': 'EA', 'Organization': 'ORG',
+}
 
 export default function CompleteModal({ initiative, user, teamList, onClose, onSubmitted }: Props) {
   const [finalSummary, setFinalSummary] = useState('')
@@ -21,6 +29,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
   const [toolLink, setToolLink] = useState(initiative.completion_links ?? '')
   const [participants, setParticipants] = useState(initiative.participants ?? '')
   const [docType, setDocType] = useState('SOP')
+  const [docDepartment, setDocDepartment] = useState(DEPT_CODE[initiative.department ?? ''] ?? '')
   const [docPurpose, setDocPurpose] = useState('')
   const [docContext, setDocContext] = useState('')
   const [docOwner, setDocOwner] = useState('')
@@ -42,6 +51,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
     if (!finalSummary.trim()) { setError('Please provide a completion summary.'); return }
     if (!sopLink.trim()) { setError('SOP / Documentation link is required.'); return }
     if (hasSop) {
+      if (!docDepartment) { setError('Doc Registry: Department is required.'); return }
       if (!docPurpose.trim()) { setError('Doc Registry: Purpose is required.'); return }
       if (!docContext.trim()) { setError('Doc Registry: Context is required.'); return }
       if (!docOwner) { setError('Doc Registry: Owner role is required.'); return }
@@ -64,6 +74,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
         tool_link: toolLink,
         participants,
         doc_type: docType,
+        doc_department: docDepartment,
         doc_purpose: docPurpose,
         doc_context: docContext,
         doc_owner: docOwner,
@@ -125,6 +136,12 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
               <label className="modal-label">Document Type <span className="req">*</span></label>
               <select value={docType} onChange={e => setDocType(e.target.value)}>
                 {DOC_TYPES.map(t => <option key={t}>{t}</option>)}
+              </select>
+
+              <label className="modal-label">Department <span className="req">*</span></label>
+              <select value={docDepartment} onChange={e => setDocDepartment(e.target.value)}>
+                <option value="">Select department…</option>
+                {DOC_DEPARTMENTS.map(d => <option key={d}>{d}</option>)}
               </select>
 
               <label className="modal-label">

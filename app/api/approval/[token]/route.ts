@@ -88,7 +88,7 @@ export async function GET(req: Request, { params }: Params) {
           body: JSON.stringify({
             formData: {
               documentType: (initiative.doc_type ?? 'SOP') as string,
-              department: DEPT_CODE[(initiative.department ?? '') as string] ?? (initiative.department ?? '') as string,
+              department: (initiative.doc_department || DEPT_CODE[(initiative.department ?? '') as string] || (initiative.department ?? '')) as string,
               purpose: initiative.doc_purpose as string,
               context: initiative.doc_context as string,
               owner: initiative.doc_owner as string,

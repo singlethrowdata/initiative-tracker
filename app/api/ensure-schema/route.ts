@@ -13,6 +13,7 @@ export async function GET() {
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS doc_context TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS doc_owner TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS doc_tags TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS doc_department TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_tab TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_category TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_use_case TEXT`
