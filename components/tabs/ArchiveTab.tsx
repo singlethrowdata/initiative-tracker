@@ -87,7 +87,7 @@ export default function ArchiveTab({ user, canDelete, teamList }: Props) {
                     <button className="init-name-link" onClick={() => setSelectedId(i.id)}>
                       {i.task_name}
                     </button>
-                    {i.department && <div className="creator-badge">{i.department}</div>}
+                    {i.type && <div className={`creator-badge type-badge-${i.type.toLowerCase()}`}>{i.type}</div>}
                   </td>
                   <td>
                     <span className={`pill ${statusClass(i.status)}`}>

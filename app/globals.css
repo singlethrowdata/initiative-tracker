@@ -199,6 +199,10 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .link-chip:hover{background:var(--bg-w);color:var(--blue)}
 .links-stack{display:flex;flex-direction:column;gap:3px}
 .creator-badge{display:inline-block;font-size:.6rem;font-weight:700;color:var(--text-3);background:var(--bg);border:1px solid var(--border);border-radius:100px;padding:.1rem .45rem;margin-top:.25rem;letter-spacing:.02em}
+.type-badge-tool{color:#1A5276;background:rgba(41,128,185,0.1);border-color:rgba(41,128,185,0.3)}
+.type-badge-process{color:#7D6608;background:rgba(212,172,13,0.1);border-color:rgba(212,172,13,0.3)}
+.type-badge-campaign{color:#6C3483;background:rgba(142,68,173,0.1);border-color:rgba(142,68,173,0.3)}
+.type-badge-other{color:#1E8449;background:rgba(39,174,96,0.1);border-color:rgba(39,174,96,0.3)}
 
 .expand-row td{padding:0 !important;border-bottom:1px solid var(--border);background:var(--bg)}
 .expand-inner{padding:1.5rem 1.75rem;animation:fadeIn .25s ease}

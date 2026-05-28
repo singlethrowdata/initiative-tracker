@@ -39,7 +39,7 @@ export default function InitiativeRow({
 
       <td style={{ width: '18%' }}>
         <button className="init-name-link" onClick={onOpen}>{i.task_name}</button>
-        {i.type && <div className="creator-badge">{i.type}</div>}
+        {i.type && <div className={`creator-badge type-badge-${i.type.toLowerCase()}`}>{i.type}</div>}
       </td>
 
       <td style={{ width: '35%' }}>
