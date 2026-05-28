@@ -51,6 +51,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
   const [tsDepartments, setTsDepartments] = useState<string[]>([])
   const [tsResponsible, setTsResponsible] = useState('')
   const [tsUsername, setTsUsername] = useState('')
+  const [tsPassword, setTsPassword] = useState('')
   const [tsNotes, setTsNotes] = useState('')
   const [tsClientOwner, setTsClientOwner] = useState('')
   const [saving, setSaving] = useState(false)
@@ -96,6 +97,7 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
         ts_departments: tsDepartments.join(','),
         ts_responsible: tsResponsible,
         ts_username: tsUsername,
+        ts_password: tsPassword,
         ts_notes: tsNotes,
         ts_client_owner: tsClientOwner,
       }),
@@ -282,6 +284,9 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
 
               <label className="modal-label">Username</label>
               <input type="text" placeholder="Login username or email" value={tsUsername} onChange={e => setTsUsername(e.target.value)} />
+
+              <label className="modal-label">Password</label>
+              <input type="password" placeholder="Tool password (stored encrypted in Tech Stack Hub)" value={tsPassword} onChange={e => setTsPassword(e.target.value)} />
 
               <label className="modal-label">Notes</label>
               <input type="text" placeholder="Any additional notes…" value={tsNotes} onChange={e => setTsNotes(e.target.value)} />

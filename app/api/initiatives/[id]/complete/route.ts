@@ -44,6 +44,7 @@ export async function POST(req: Request, { params }: Params) {
       ts_departments = ${body.ts_departments ?? ''},
       ts_responsible = ${body.ts_responsible ?? ''},
       ts_username = ${body.ts_username ?? ''},
+      ts_password = ${body.ts_password ?? ''},
       ts_notes = ${body.ts_notes ?? ''},
       ts_client_owner = ${body.ts_client_owner ?? ''},
       updated_at = ${new Date().toISOString()}

@@ -120,6 +120,7 @@ export async function GET(req: Request, { params }: Params) {
             department: (initiative.ts_departments ?? initiative.department ?? '') as string,
             responsible_for_update: (initiative.ts_responsible ?? '') as string,
             username: (initiative.ts_username ?? '') as string,
+            password: (initiative.ts_password ?? '') as string,
             notes: (initiative.ts_notes ?? '') as string,
             client_owner: (initiative.ts_client_owner ?? null),
             tags: (initiative.doc_tags ?? '') as string,

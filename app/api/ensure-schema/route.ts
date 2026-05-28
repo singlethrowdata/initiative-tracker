@@ -18,6 +18,7 @@ export async function GET() {
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_departments TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_username TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_notes TEXT`
+  await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_password TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_tab TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_category TEXT`
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_use_case TEXT`
