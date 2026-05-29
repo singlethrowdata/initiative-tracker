@@ -111,7 +111,7 @@ export async function GET(req: Request, { params }: Params) {
               purpose: initiative.doc_purpose as string,
               context: initiative.doc_context as string,
               owner: initiative.doc_owner as string,
-              summary: (initiative.completion_desc ?? initiative.description ?? '') as string,
+              summary: (initiative.completion_desc || initiative.description || '') as string,
               fileLink: initiative.sop_link as string,
               tags: (initiative.doc_tags ?? '') as string,
               visibleToEmails,
