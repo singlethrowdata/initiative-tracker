@@ -63,12 +63,15 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!finalSummary.trim()) { setError('Please provide a completion summary.'); return }
+    if (finalSummary.trim().length < 50) { setError(`Completion summary must be at least 50 characters (currently ${finalSummary.trim().length}).`); return }
     if (!sopLink.trim()) { setError('SOP / Documentation link is required.'); return }
     if (hasSop) {
       if (!docDepartment) { setError('Doc Registry: Department is required.'); return }
       if (!docPurpose.trim()) { setError('Doc Registry: Purpose is required.'); return }
       if (!docContext.trim()) { setError('Doc Registry: Context is required.'); return }
       if (!docOwner) { setError('Doc Registry: Owner role is required.'); return }
+      const tagList = docTags.split(',').map(t => t.trim()).filter(Boolean)
+      if (tagList.length < 3) { setError(`Doc Registry: At least 3 tags required (currently ${tagList.length}).`); return }
     }
     if (isTool) {
       if (!tsTab) { setError('Tech Stack: Tab is required.'); return }
@@ -120,9 +123,14 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
         </p>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflow: 'hidden' }}>
           <div style={{ overflowY: 'auto', flex: 1, paddingRight: '.25rem' }}>
-          <label className="modal-label">Final Summary <span className="req">*</span></label>
+          <label className="modal-label">
+            Final Summary <span className="req">*</span>
+            <span style={{ fontSize: '.68rem', color: finalSummary.trim().length > 0 && finalSummary.trim().length < 50 ? 'var(--danger)' : 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>
+              {finalSummary.trim().length}/50 min
+            </span>
+          </label>
           <textarea
-            placeholder="Summarize what was accomplished, outcomes, and impact…"
+            placeholder="Summarize what was accomplished, outcomes, and impact… (min. 50 characters)"
             value={finalSummary}
             onChange={e => setFinalSummary(e.target.value)}
             rows={4}
@@ -228,8 +236,8 @@ export default function CompleteModal({ initiative, user, teamList, onClose, onS
               </select>
 
               <label className="modal-label">
-                Tags
-                <span style={{ fontSize: '.68rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>(optional, comma-separated)</span>
+                Tags <span className="req">*</span>
+                <span style={{ fontSize: '.68rem', color: 'var(--text-3)', fontWeight: 400, marginLeft: '.35rem' }}>min. 3, comma-separated</span>
               </label>
               <input
                 type="text"
