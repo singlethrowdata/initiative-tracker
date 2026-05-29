@@ -37,6 +37,11 @@ export default function ArchiveTab({ user, canDelete, teamList }: Props) {
     setInitiatives(prev => prev.filter(i => i.id !== id))
   }
 
+  async function handleUnarchive(id: string) {
+    await fetch(`/api/initiatives/${id}/unarchive`, { method: 'POST' })
+    setInitiatives(prev => prev.filter(i => i.id !== id))
+  }
+
   return (
     <>
       <div className="tracker-wrap">
@@ -77,7 +82,7 @@ export default function ArchiveTab({ user, canDelete, teamList }: Props) {
                 <th style={{ width: '12%' }}>Completed By</th>
                 <th style={{ width: '9%' }}>Completed</th>
                 <th style={{ width: '18%' }}>Summary</th>
-                {canDelete && <th style={{ width: '6%' }} />}
+                {canDelete && <th style={{ width: '10%' }} />}
               </tr>
             </thead>
             <tbody>
@@ -103,7 +108,10 @@ export default function ArchiveTab({ user, canDelete, teamList }: Props) {
                   </td>
                   {canDelete && (
                     <td>
-                      <button className="btn btn-danger-o btn-xs" onClick={() => handleDelete(i.id)}>Delete</button>
+                      <div style={{ display: 'flex', gap: '.35rem' }}>
+                        <button className="btn btn-soft btn-xs" onClick={() => handleUnarchive(i.id)} title="Move back to Tracker">↩ Unarchive</button>
+                        <button className="btn btn-danger-o btn-xs" onClick={() => handleDelete(i.id)}>Delete</button>
+                      </div>
                     </td>
                   )}
                 </tr>
