@@ -49,9 +49,15 @@ export async function GET(req: Request, { params }: Params) {
     `
 
     const completedByName = (initiative.completion_requester_name ?? initiative.created_by_name ?? '') as string
+    const docApiUrl = process.env.DOC_REGISTRY_API_URL
+    const docApiSecret = process.env.DOC_REGISTRY_INTERNAL_SECRET
+    const tsApiUrl = process.env.TECH_STACK_HUB_URL
+    const tsApiSecret = process.env.TECH_STACK_INTERNAL_SECRET
 
-    // Fire-and-forget — sheet writes shouldn't block the confirmation page
-    Promise.all([
+    const pushes: Promise<unknown>[] = []
+
+    // Google Sheet writes (legacy log)
+    pushes.push(
       appendToDocRegistry({
         task_name: initiative.task_name as string,
         department: (initiative.department ?? '') as string,
@@ -72,17 +78,15 @@ export async function GET(req: Request, { params }: Params) {
         completion_links: (initiative.completion_links ?? '') as string,
         completed_by_name: completedByName,
         completed_at: now,
-      }),
-    ]).catch(err => console.error('Sheet write failed:', err))
+      })
+    )
 
-    // Push to Doc Registry if SOP link + doc fields were provided
-    if (initiative.sop_link && initiative.doc_purpose && initiative.doc_context && initiative.doc_owner) {
-      const docApiUrl = process.env.DOC_REGISTRY_API_URL
-      const docApiSecret = process.env.DOC_REGISTRY_INTERNAL_SECRET
-      if (docApiUrl && docApiSecret) {
-        const visibleToEmails = initiative.doc_visible_to
-          ? (initiative.doc_visible_to as string).split(',').map((e: string) => e.trim()).filter(Boolean)
-          : await getActiveTeam().then((t: { email: string }[]) => t.map(m => m.email).filter(Boolean))
+    // Doc Registry API push (requires sop_link + doc fields)
+    if (initiative.sop_link && initiative.doc_purpose && initiative.doc_context && initiative.doc_owner && docApiUrl && docApiSecret) {
+      const visibleToEmails = initiative.doc_visible_to
+        ? (initiative.doc_visible_to as string).split(',').map((e: string) => e.trim()).filter(Boolean)
+        : await getActiveTeam().then((t: { email: string }[]) => t.map(m => m.email).filter(Boolean))
+      pushes.push(
         fetch(`${docApiUrl}/api/internal/submit`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-secret': docApiSecret },
@@ -100,15 +104,18 @@ export async function GET(req: Request, { params }: Params) {
             },
             userEmail: (initiative.completion_requester_email ?? initiative.created_by) as string,
           }),
-        }).catch(err => console.error('Doc Registry push failed:', err))
-      }
+        }).then(r => r.json()).then(d => console.log('Doc Registry push:', d)).catch(err => console.error('Doc Registry push failed:', err))
+      )
+    } else if (initiative.sop_link) {
+      console.log('Doc Registry push skipped — missing fields:', {
+        doc_purpose: initiative.doc_purpose, doc_context: initiative.doc_context,
+        doc_owner: initiative.doc_owner, docApiUrl: !!docApiUrl, docApiSecret: !!docApiSecret,
+      })
     }
 
-    // Push to Tech Stack Hub if this is a Tool initiative with tab filled in
-    if (initiative.type === 'Tool' && initiative.ts_tab) {
-      const tsApiUrl = process.env.TECH_STACK_HUB_URL
-      const tsApiSecret = process.env.TECH_STACK_INTERNAL_SECRET
-      if (tsApiUrl && tsApiSecret) {
+    // Tech Stack Hub API push (requires Tool type + ts_tab)
+    if (initiative.type === 'Tool' && initiative.ts_tab && tsApiUrl && tsApiSecret) {
+      pushes.push(
         fetch(`${tsApiUrl}/api/tools/internal`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'x-api-secret': tsApiSecret },
@@ -126,9 +133,16 @@ export async function GET(req: Request, { params }: Params) {
             tags: (initiative.doc_tags ?? '') as string,
             created_by: (initiative.completion_requester_email ?? initiative.created_by) as string,
           }),
-        }).catch(err => console.error('Tech Stack Hub push failed:', err))
-      }
+        }).then(r => r.json()).then(d => console.log('Tech Stack push:', d)).catch(err => console.error('Tech Stack push failed:', err))
+      )
+    } else if (initiative.type === 'Tool') {
+      console.log('Tech Stack push skipped — missing fields:', {
+        ts_tab: initiative.ts_tab, tsApiUrl: !!tsApiUrl, tsApiSecret: !!tsApiSecret,
+      })
     }
+
+    // Await all pushes so Vercel doesn't kill them before completion
+    await Promise.allSettled(pushes)
 
     const approvedRecipients = [...new Set([
       initiative.completion_requester_email as string,
