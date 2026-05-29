@@ -10,11 +10,12 @@ const DEPT_CODE: Record<string, string> = {
   'Executive Assistant': 'EA', 'Organization': 'ORG',
 }
 
-export async function POST(req: Request) {
+export async function GET(req: Request) {
   const session = await getSession()
   if (!session?.user?.email) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id } = await req.json()
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id') ?? ''
   const [initiative] = await sql`SELECT * FROM initiatives WHERE id = ${id}`
   if (!initiative) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
