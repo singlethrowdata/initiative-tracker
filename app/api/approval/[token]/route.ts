@@ -3,6 +3,20 @@ import { sql } from '@/lib/db'
 import { sendApprovalDecisionEmail } from '@/lib/email'
 import { appendToDocRegistry, appendToTechStack } from '@/lib/sheets'
 import { getActiveTeam } from '@/lib/team'
+import crypto from 'crypto'
+
+function encryptForTechStack(text: string): { encrypted: string; iv: string } {
+  if (!text || !process.env.TECH_STACK_ENCRYPTION_KEY) return { encrypted: '', iv: '' }
+  const key = Buffer.from(process.env.TECH_STACK_ENCRYPTION_KEY, 'hex')
+  const iv = crypto.randomBytes(12)
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()])
+  const tag = cipher.getAuthTag()
+  return {
+    encrypted: `${encrypted.toString('base64')}:${tag.toString('base64')}`,
+    iv: iv.toString('base64'),
+  }
+}
 
 const DEPT_CODE: Record<string, string> = {
   'Operations': 'OPS', 'Content': 'CONT', 'SEO': 'SEO', 'Design': 'CR',
@@ -113,32 +127,50 @@ export async function GET(req: Request, { params }: Params) {
       })
     }
 
-    // Tech Stack Hub API push (requires Tool type + ts_tab)
-    if (initiative.type === 'Tool' && initiative.ts_tab && tsApiUrl && tsApiSecret) {
-      pushes.push(
-        fetch(`${tsApiUrl}/api/tools/internal`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-api-secret': tsApiSecret },
-          body: JSON.stringify({
-            tool_name: initiative.task_name as string,
-            tab: initiative.ts_tab as string,
-            description: (initiative.description ?? '') as string,
-            access_url: (initiative.completion_links ?? '') as string,
-            department: (initiative.ts_departments ?? initiative.department ?? '') as string,
-            responsible_for_update: (initiative.ts_responsible ?? '') as string,
-            username: (initiative.ts_username ?? '') as string,
-            password: (initiative.ts_password ?? '') as string,
-            notes: (initiative.ts_notes ?? '') as string,
-            client_owner: (initiative.ts_client_owner ?? null),
-            tags: (initiative.doc_tags ?? '') as string,
-            created_by: (initiative.completion_requester_email ?? initiative.created_by) as string,
-          }),
-        }).then(r => r.json()).then(d => console.log('Tech Stack push:', d)).catch(err => console.error('Tech Stack push failed:', err))
-      )
-    } else if (initiative.type === 'Tool') {
-      console.log('Tech Stack push skipped — missing fields:', {
-        ts_tab: initiative.ts_tab, tsApiUrl: !!tsApiUrl, tsApiSecret: !!tsApiSecret,
-      })
+    // Tech Stack Hub — direct Supabase insert (bypasses internal API)
+    if (initiative.type === 'Tool' && initiative.ts_tab) {
+      const supabaseUrl = process.env.TECH_STACK_SUPABASE_URL
+      const supabaseKey = process.env.TECH_STACK_SUPABASE_KEY
+      if (supabaseUrl && supabaseKey) {
+        const { encrypted: password_encrypted, iv: password_iv } = encryptForTechStack((initiative.ts_password ?? '') as string)
+        const toolId = crypto.randomUUID().replace(/-/g, '').substring(0, 8)
+        pushes.push(
+          fetch(`${supabaseUrl}/rest/v1/tools`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseKey}`,
+              'apikey': supabaseKey,
+              'Prefer': 'return=minimal',
+            },
+            body: JSON.stringify({
+              id: toolId,
+              tool_name: initiative.task_name,
+              tab: initiative.ts_tab,
+              type: (initiative.ts_category ?? '') as string,
+              description: (initiative.description ?? '') as string,
+              access_url: (initiative.completion_links ?? '') as string,
+              responsible_for_update: (initiative.ts_responsible ?? '') as string,
+              department: (initiative.ts_departments ?? initiative.department ?? '') as string,
+              category: (initiative.ts_category ?? '') as string,
+              use_case: (initiative.ts_use_case ?? '') as string,
+              client_owner: (initiative.ts_client_owner ?? null),
+              google_signin: false,
+              created_by: (initiative.completion_requester_email ?? initiative.created_by) as string,
+              created_date: now.split('T')[0],
+              password_encrypted,
+              password_iv,
+              notes: (initiative.ts_notes ?? '') as string,
+              tags: (initiative.doc_tags ?? '') as string,
+              username: (initiative.ts_username ?? '') as string,
+            }),
+          }).then(r => { console.log('Tech Stack Supabase push status:', r.status); return r.text() })
+            .then(t => console.log('Tech Stack response:', t))
+            .catch(err => console.error('Tech Stack Supabase push failed:', err))
+        )
+      } else {
+        console.log('Tech Stack push skipped — TECH_STACK_SUPABASE_URL or TECH_STACK_SUPABASE_KEY not set')
+      }
     }
 
     // Await all pushes so Vercel doesn't kill them before completion
