@@ -16,6 +16,19 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id') ?? ''
+
+  if (searchParams.get('action') === 'unarchive') {
+    await sql`
+      UPDATE initiatives SET
+        is_archived = false, archived_at = null,
+        approval_status = null, approval_token = null,
+        approval_requested_at = null, status = 'In Progress',
+        completion_desc = '', sop_link = '', completion_links = '',
+        updated_at = ${new Date().toISOString()}
+      WHERE id = ${id}
+    `
+    return NextResponse.json({ success: true, message: 'Initiative reset to In Progress' })
+  }
   const [initiative] = await sql`SELECT * FROM initiatives WHERE id = ${id}`
   if (!initiative) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
