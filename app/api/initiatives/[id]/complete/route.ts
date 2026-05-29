@@ -56,7 +56,7 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: 'Database error — run /api/ensure-schema to add missing columns', detail: String(e) }, { status: 500 })
   }
 
-  sendApprovalRequestEmail(
+  const emailResult = await sendApprovalRequestEmail(
     id,
     initiative.task_name as string,
     token,
@@ -70,7 +70,9 @@ export async function POST(req: Request, { params }: Params) {
     (initiative.description ?? '') as string,
     (initiative.start_date ?? '') as string,
     (initiative.anticipated_end_date ?? '') as string,
-  ).catch(console.error)
+  ).catch((e: unknown) => { console.error('Approval email error:', e); return null })
 
-  return NextResponse.json({ success: true })
+  if (!emailResult) console.warn('Approval email failed to send — check RESEND_API_KEY in Vercel env')
+
+  return NextResponse.json({ success: true, emailSent: emailResult !== null })
 }

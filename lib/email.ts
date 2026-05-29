@@ -141,9 +141,13 @@ export async function sendApprovalRequestEmail(
   </div>`
 
   const recipients = ['nstryker@singlethrow.com', 'tech@singlethrow.com']
+  const results = []
   for (const recipient of recipients) {
-    await send(recipient, `Approval Required — Complete Initiative: ${taskName}`, html)
+    const r = await send(recipient, `Approval Required — Complete Initiative: ${taskName}`, html)
+    results.push({ recipient, ...r })
+    if (!r.ok) console.error('Approval email failed for', recipient, r.error)
   }
+  return results
 }
 
 export async function sendApprovalDecisionEmail(
