@@ -49,9 +49,9 @@ export async function GET(req: Request, { params }: Params) {
     `
 
     const completedByName = (initiative.completion_requester_name ?? initiative.created_by_name ?? '') as string
-    const docApiUrl = process.env.DOC_REGISTRY_API_URL
+    const docApiUrl = (process.env.DOC_REGISTRY_API_URL ?? '').replace(/\/$/, '')
     const docApiSecret = process.env.DOC_REGISTRY_INTERNAL_SECRET
-    const tsApiUrl = process.env.TECH_STACK_HUB_URL
+    const tsApiUrl = (process.env.TECH_STACK_HUB_URL ?? '').replace(/\/$/, '')
     const tsApiSecret = process.env.TECH_STACK_INTERNAL_SECRET
 
     const pushes: Promise<unknown>[] = []
