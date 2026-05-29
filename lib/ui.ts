@@ -30,8 +30,8 @@ export function statusClass(status: string): string {
   if (s === 'in progress') return 's-active'
   if (s === 'not started') return 's-pending'
   if (s === 'blocked') return 's-blocked'
-  if (s === 'completed' || s === 'complete') return 's-complete'
-  if (s === 'approved') return 's-approved'
+  if (s === 'complete') return 's-complete'
+  if (s === 'completed' || s === 'approved') return 's-approved'
   if (s.includes('await') || s.includes('approv')) return 's-await'
   return 's-other'
 }

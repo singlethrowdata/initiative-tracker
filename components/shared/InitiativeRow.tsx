@@ -16,7 +16,7 @@ interface Props {
   onRefresh: () => void
 }
 
-const STATUSES = ['Not Started', 'In Progress', 'Planning', 'Blocked', 'Awaiting Approval', 'Approved']
+const STATUSES = ['Not Started', 'In Progress', 'Planning', 'Blocked', 'Awaiting Approval', 'Completed']
 
 export default function InitiativeRow({
   initiative: i, user, canDelete,
@@ -63,7 +63,7 @@ export default function InitiativeRow({
           <button className="icon-btn" onClick={onOpen} title="View details">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
           </button>
-          {i.status !== 'Awaiting Approval' && i.status !== 'Approved' && (
+          {i.status !== 'Awaiting Approval' && i.status !== 'Approved' && i.status !== 'Completed' && (
             <button className="icon-btn icon-btn-success" onClick={onComplete} title="Mark complete">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
             </button>

@@ -202,7 +202,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
         </div>
         {initiative && (
           <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
-            {initiative.status !== 'Awaiting Approval' && initiative.status !== 'Approved' && (
+            {initiative.status !== 'Awaiting Approval' && initiative.status !== 'Approved' && initiative.status !== 'Completed' && (
               <button className="btn btn-grad btn-sm" onClick={onComplete}>
                 <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M20 6L9 17l-5-5" /></svg>
                 Complete
@@ -286,14 +286,14 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
           )}
 
           {/* Approved banner */}
-          {initiative.status === 'Approved' && (
+          {(initiative.status === 'Approved' || initiative.status === 'Completed') && (
             <div className="dp-approved-banner">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 18, height: 18, flexShrink: 0 }}>
                 <circle cx="12" cy="12" r="10" />
                 <path d="M9 12l2 2 4-4" />
               </svg>
               <div>
-                <strong>Approved for Completion</strong> — This initiative has been approved and is archived.
+                <strong>Completed</strong> — This initiative has been approved and is archived.
               </div>
             </div>
           )}

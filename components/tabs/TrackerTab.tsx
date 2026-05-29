@@ -15,7 +15,7 @@ interface Props {
   teamList: TeamMember[]
 }
 
-const STATUSES = ['All', 'Not Started', 'In Progress', 'Blocked', 'Awaiting Approval', 'Approved']
+const STATUSES = ['All', 'Not Started', 'In Progress', 'Blocked', 'Awaiting Approval', 'Completed']
 const PRIORITIES = ['All', 'High', 'Medium', 'Low']
 const TYPES = ['All', 'Tool', 'Process', 'Campaign', 'Other']
 

@@ -54,7 +54,7 @@ export async function GET(req: Request, { params }: Params) {
     await sql`
       UPDATE initiatives SET
         approval_status = 'approved',
-        status = 'Approved',
+        status = 'Completed',
         is_archived = true,
         archived_at = ${now},
         approval_token = null,
