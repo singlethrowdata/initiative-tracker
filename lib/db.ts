@@ -14,7 +14,7 @@ const ALLOWED: Record<string, Set<string>> = {
   ]),
   updates: new Set([
     'description', 'assigned_to', 'links', 'waiting_on', 'target_date',
-    'participants', 'completed', 'updated_at',
+    'participants', 'completed', 'blocked', 'blocked_reason', 'updated_at',
   ]),
   community_posts: new Set(['title', 'content', 'is_resolved', 'updated_at']),
   personal_notes: new Set(['title', 'content', 'updated_at']),

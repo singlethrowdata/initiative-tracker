@@ -54,6 +54,8 @@ export interface Update {
   target_date: string
   participants: string
   completed: boolean
+  blocked: boolean
+  blocked_reason: string
   created_at: string
 }
 

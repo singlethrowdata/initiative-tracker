@@ -27,6 +27,8 @@ export async function GET() {
   await sql`ALTER TABLE initiatives ADD COLUMN IF NOT EXISTS ts_client_owner TEXT`
   await sql`ALTER TABLE community_comments ADD COLUMN IF NOT EXISTS is_concern BOOLEAN DEFAULT FALSE`
   await sql`ALTER TABLE community_posts ADD COLUMN IF NOT EXISTS is_resolved BOOLEAN DEFAULT FALSE`
+  await sql`ALTER TABLE updates ADD COLUMN IF NOT EXISTS blocked BOOLEAN DEFAULT FALSE`
+  await sql`ALTER TABLE updates ADD COLUMN IF NOT EXISTS blocked_reason TEXT`
   await sql`
     CREATE TABLE IF NOT EXISTS note_comments (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

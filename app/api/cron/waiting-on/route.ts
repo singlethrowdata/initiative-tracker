@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
-import { sendWaitingOnReminderEmail } from '@/lib/email'
+import { sendWaitingOnReminderEmail, sendBlockedMilestoneReminderEmail } from '@/lib/email'
 import { getTeamMap } from '@/lib/team'
 
 // Vercel cron: weekly — send reminders for every unique waiting-on person across open milestones
@@ -79,6 +79,43 @@ export async function GET(req: Request) {
       UPDATE initiatives SET last_waiting_on_reminder = ${new Date().toISOString()}
       WHERE id = ${initiative.id}
     `
+  }
+
+  // Blocked milestones — notify the assigned person regardless of waiting_on
+  const blockedMilestones = await sql`
+    SELECT u.id, u.description, u.assigned_to, u.blocked_reason, u.created_at,
+           i.task_name, i.last_waiting_on_reminder
+    FROM updates u
+    JOIN initiatives i ON i.id = u.initiative_id
+    WHERE i.is_archived = false
+      AND u.completed = false
+      AND u.blocked = true
+      AND u.assigned_to IS NOT NULL
+      AND u.assigned_to != ''
+  `
+
+  for (const u of blockedMilestones) {
+    const lastReminder = u.last_waiting_on_reminder
+      ? new Date(u.last_waiting_on_reminder as string).getTime()
+      : 0
+    const daysSinceReminder = Math.floor((now - lastReminder) / 86_400_000)
+    if (daysSinceReminder < 7) continue
+
+    const createdAt = u.created_at ? new Date(u.created_at as string).getTime() : now
+    const daysPending = Math.max(1, Math.floor((now - createdAt) / 86_400_000))
+    if (daysPending < 2) continue
+
+    const assignedEmail = nameToEmail[u.assigned_to as string]
+    if (!assignedEmail) continue
+
+    await sendBlockedMilestoneReminderEmail(
+      assignedEmail, u.assigned_to as string,
+      u.task_name as string,
+      u.description as string,
+      (u.blocked_reason as string) || 'No reason specified',
+      daysPending
+    )
+    sent++
   }
 
   return NextResponse.json({ sent })

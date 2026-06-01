@@ -233,6 +233,8 @@ function MilestoneRow({ u, user, today, teamList, showComments, setShowComments,
   const [draftDesc, setDraftDesc] = useState(u.description)
   const [editingLinks, setEditingLinks] = useState(false)
   const [draftLinks, setDraftLinks] = useState(u.links ?? '')
+  const [editingBlockedReason, setEditingBlockedReason] = useState(false)
+  const [draftBlockedReason, setDraftBlockedReason] = useState(u.blocked_reason ?? '')
 
   function saveDesc() {
     setEditingDesc(false)
@@ -247,6 +249,23 @@ function MilestoneRow({ u, user, today, teamList, showComments, setShowComments,
     setEditingLinks(false)
     if (draftLinks !== u.links) {
       onUpdate(u.id, { links: draftLinks })
+    }
+  }
+
+  function toggleBlocked() {
+    if (u.blocked) {
+      onUpdate(u.id, { blocked: false, blocked_reason: '' })
+      setDraftBlockedReason('')
+    } else {
+      onUpdate(u.id, { blocked: true })
+      setEditingBlockedReason(true)
+    }
+  }
+
+  function saveBlockedReason() {
+    setEditingBlockedReason(false)
+    if (draftBlockedReason !== u.blocked_reason) {
+      onUpdate(u.id, { blocked_reason: draftBlockedReason })
     }
   }
 
@@ -287,6 +306,52 @@ function MilestoneRow({ u, user, today, teamList, showComments, setShowComments,
             {u.description}
           </div>
         )}
+        {/* Blocked indicator */}
+        {!u.completed && (
+          <div style={{ marginTop: '.4rem', display: 'flex', alignItems: 'flex-start', gap: '.4rem', flexWrap: 'wrap' }}>
+            <button
+              onClick={toggleBlocked}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '.3rem',
+                fontSize: '.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.07em',
+                padding: '.2rem .5rem', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: u.blocked ? 'rgba(217,79,79,0.12)' : 'rgba(136,153,166,0.1)',
+                color: u.blocked ? 'var(--danger)' : 'var(--text-3)',
+                transition: 'all .15s',
+              }}
+              title={u.blocked ? 'Clear blocked status' : 'Mark as blocked by external factor'}
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ width: 10, height: 10 }}>
+                <circle cx="12" cy="12" r="10" /><line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              </svg>
+              {u.blocked ? 'Blocked' : 'Mark Blocked'}
+            </button>
+            {u.blocked && (
+              editingBlockedReason ? (
+                <input
+                  type="text"
+                  className="milestone-inline-input"
+                  value={draftBlockedReason}
+                  autoFocus
+                  placeholder="What is blocking this? (e.g. Waiting on vendor contract)"
+                  style={{ flex: 1, minWidth: 180, fontSize: '.72rem' }}
+                  onChange={e => setDraftBlockedReason(e.target.value)}
+                  onBlur={saveBlockedReason}
+                  onKeyDown={e => { if (e.key === 'Enter') saveBlockedReason(); if (e.key === 'Escape') { setDraftBlockedReason(u.blocked_reason ?? ''); setEditingBlockedReason(false) } }}
+                />
+              ) : (
+                <span
+                  onClick={() => { setDraftBlockedReason(u.blocked_reason ?? ''); setEditingBlockedReason(true) }}
+                  style={{ fontSize: '.72rem', color: '#8a6000', background: '#FFF3E0', padding: '.2rem .5rem', borderRadius: 6, cursor: 'pointer' }}
+                  title="Click to edit reason"
+                >
+                  {u.blocked_reason || <em style={{ color: 'var(--text-3)' }}>No reason set — click to add</em>}
+                </span>
+              )
+            )}
+          </div>
+        )}
+
         {/* Comments */}
         {(cmts.length > 0 || hasComments) ? (
           <div className="ut-comments" style={{ marginTop: '.4rem' }}>

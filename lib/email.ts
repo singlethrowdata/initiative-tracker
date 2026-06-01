@@ -60,6 +60,30 @@ export async function sendAssignedToMilestoneEmail(
   await send(toEmail, `You've been assigned a milestone — ${initiativeName}`, html)
 }
 
+export async function sendBlockedMilestoneReminderEmail(
+  toEmail: string, toName: string, initiativeName: string,
+  milestoneDescription: string, blockedReason: string, daysPending: number
+) {
+  const html = `<div style="font-family:Arial,sans-serif;max-width:540px;margin:0 auto">
+    <div style="background:linear-gradient(135deg,#8B4513,#D4920A);padding:18px 22px;border-radius:10px 10px 0 0">
+      <h2 style="color:#fff;margin:0;font-size:15px">Reminder — Blocked Milestone Still Open</h2>
+    </div>
+    <div style="background:#fff;padding:20px;border:1px solid #ddd;border-top:none;border-radius:0 0 10px 10px">
+      <p style="color:#1B2A3B;font-size:13px;margin:0 0 6px">A milestone assigned to you on <strong>${initiativeName}</strong> is still blocked:</p>
+      <div style="background:#F4F6F8;border-radius:8px;padding:14px;margin:12px 0">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1A5276;margin-bottom:6px">Milestone</div>
+        <div style="font-size:13px;color:#1B2A3B;line-height:1.6">${milestoneDescription}</div>
+      </div>
+      <div style="background:#FFF3E0;border-left:4px solid #D4920A;border-radius:4px;padding:14px;margin:0 0 16px;color:#4A6274;font-size:13px;line-height:1.6">
+        <strong style="color:#8a6000">Blocked:</strong> ${blockedReason}
+      </div>
+      <p style="color:#4A6274;font-size:13px;line-height:1.6;margin:0 0 4px">This milestone has been blocked for <strong>${daysPending} day${daysPending !== 1 ? 's' : ''}</strong>. Check if the blocker has been resolved and update the status.</p>
+      <p style="color:#8899A6;font-size:11px;margin:8px 0 0">Weekly reminder until resolved.</p>
+    </div>
+  </div>`
+  await send(toEmail, `Blocked milestone reminder (${daysPending}d) — ${initiativeName}`, html)
+}
+
 export async function sendWaitingOnEmail(
   toEmail: string, toName: string, initiativeName: string,
   requestedByName: string, updateDescription?: string
