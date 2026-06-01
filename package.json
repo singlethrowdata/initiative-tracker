@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.100.1",
     "@neondatabase/serverless": "^1.1.0",
     "csv-stringify": "^6.7.0",
     "googleapis": "^171.4.0",

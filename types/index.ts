@@ -129,3 +129,12 @@ export interface InitialData {
   canDelete: boolean
   teamList: TeamMember[]
 }
+
+export interface AiRecommendation {
+  id: string
+  type: 'milestone' | 'note'
+  description: string
+  assigned_to: string
+  target_date: string
+  approved: boolean
+}

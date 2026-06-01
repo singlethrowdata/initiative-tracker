@@ -1,0 +1,306 @@
+'use client'
+
+import { useState } from 'react'
+import { AiRecommendation } from '@/types'
+
+interface Props {
+  initiativeId: string
+  initiativeName: string
+  teamList: { display_name: string }[]
+  onClose: () => void
+  onApplied: () => void
+}
+
+type Step = 'input' | 'review'
+
+export default function MeetingAnalysisModal({ initiativeId, initiativeName, teamList, onClose, onApplied }: Props) {
+  const [step, setStep] = useState<Step>('input')
+  const [transcript, setTranscript] = useState('')
+  const [analyzing, setAnalyzing] = useState(false)
+  const [applying, setApplying] = useState(false)
+  const [error, setError] = useState('')
+  const [recommendations, setRecommendations] = useState<AiRecommendation[]>([])
+
+  async function handleAnalyze() {
+    if (!transcript.trim()) return
+    setAnalyzing(true)
+    setError('')
+    const res = await fetch(`/api/initiatives/${initiativeId}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript }),
+    })
+    const data = await res.json()
+    setAnalyzing(false)
+    if (!res.ok) { setError(data.error ?? 'Analysis failed. Please try again.'); return }
+    if (!data.recommendations?.length) { setError('No recommendations found in these notes.'); return }
+    setRecommendations(data.recommendations)
+    setStep('review')
+  }
+
+  function toggleApproval(id: string) {
+    setRecommendations(prev => prev.map(r => r.id === id ? { ...r, approved: !r.approved } : r))
+  }
+
+  function updateField(id: string, field: keyof AiRecommendation, value: string) {
+    setRecommendations(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r))
+  }
+
+  async function handleApply() {
+    const approved = recommendations.filter(r => r.approved)
+    if (!approved.length) return
+    setApplying(true)
+    setError('')
+
+    for (const rec of approved) {
+      if (rec.type === 'milestone') {
+        await fetch(`/api/initiatives/${initiativeId}/updates`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            description: rec.description,
+            assigned_to: rec.assigned_to,
+            target_date: rec.target_date || null,
+          }),
+        })
+      } else {
+        await fetch(`/api/initiatives/${initiativeId}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content: rec.description }),
+        })
+      }
+    }
+
+    setApplying(false)
+    onApplied()
+  }
+
+  const approvedCount = recommendations.filter(r => r.approved).length
+  const memberNames = teamList.map(m => m.display_name)
+
+  return (
+    <div className="overlay show" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal" style={{ maxWidth: 620 }}>
+
+        {step === 'input' ? (
+          <>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <h3 style={{ marginBottom: '.25rem' }}>Analyze Meeting Notes</h3>
+              <p style={{ fontSize: '.78rem', color: 'var(--text-3)', margin: 0 }}>
+                Paste notes or a transcript from a meeting about <strong style={{ color: 'var(--text-2)' }}>{initiativeName}</strong>. Claude will suggest milestones and notes.
+              </p>
+            </div>
+
+            <label className="modal-label">Meeting Notes / Transcript</label>
+            <textarea
+              placeholder="Paste your meeting notes or transcript here…"
+              value={transcript}
+              onChange={e => setTranscript(e.target.value)}
+              rows={12}
+              style={{ resize: 'vertical', minHeight: 200 }}
+              autoFocus
+            />
+
+            {error && (
+              <p style={{ fontSize: '.78rem', color: 'var(--danger)', marginBottom: '.75rem', marginTop: '-.5rem' }}>{error}</p>
+            )}
+
+            <div className="modal-foot">
+              <button className="btn btn-soft btn-sm" onClick={onClose}>Cancel</button>
+              <button
+                className="btn btn-grad btn-sm"
+                onClick={handleAnalyze}
+                disabled={analyzing || !transcript.trim()}
+              >
+                {analyzing ? (
+                  <>
+                    <span className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} />
+                    Analyzing…
+                  </>
+                ) : 'Analyze'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ marginBottom: '1.25rem' }}>
+              <h3 style={{ marginBottom: '.25rem' }}>Recommended Next Steps</h3>
+              <p style={{ fontSize: '.78rem', color: 'var(--text-3)', margin: 0 }}>
+                {recommendations.length} recommendation{recommendations.length !== 1 ? 's' : ''} from your meeting notes.
+                Toggle off any you want to skip.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '.25rem' }}>
+              {recommendations.map(rec => (
+                <RecCard
+                  key={rec.id}
+                  rec={rec}
+                  memberNames={memberNames}
+                  onToggle={() => toggleApproval(rec.id)}
+                  onUpdate={(field, val) => updateField(rec.id, field, val)}
+                />
+              ))}
+            </div>
+
+            {error && (
+              <p style={{ fontSize: '.78rem', color: 'var(--danger)', marginTop: '.75rem', marginBottom: 0 }}>{error}</p>
+            )}
+
+            <div className="modal-foot">
+              <button className="btn btn-soft btn-sm" onClick={() => { setStep('input'); setError('') }}>
+                ← Back
+              </button>
+              <button
+                className="btn btn-grad btn-sm"
+                onClick={handleApply}
+                disabled={applying || approvedCount === 0}
+              >
+                {applying ? (
+                  <>
+                    <span className="spinner" style={{ width: 13, height: 13, borderWidth: 2 }} />
+                    Applying…
+                  </>
+                ) : `Apply ${approvedCount} Approved`}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+interface RecCardProps {
+  rec: AiRecommendation
+  memberNames: string[]
+  onToggle: () => void
+  onUpdate: (field: keyof AiRecommendation, val: string) => void
+}
+
+function RecCard({ rec, memberNames, onToggle, onUpdate }: RecCardProps) {
+  const isMilestone = rec.type === 'milestone'
+
+  return (
+    <div style={{
+      border: `1.5px solid ${rec.approved ? 'var(--border)' : 'var(--border)'}`,
+      borderRadius: 14,
+      padding: '1rem',
+      background: rec.approved ? 'var(--bg-w)' : 'var(--bg)',
+      opacity: rec.approved ? 1 : 0.5,
+      transition: 'all .2s',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.75rem' }}>
+        {/* Approve toggle */}
+        <button
+          onClick={onToggle}
+          style={{
+            flexShrink: 0,
+            width: 24,
+            height: 24,
+            borderRadius: 6,
+            border: `2px solid ${rec.approved ? 'var(--green)' : 'var(--border-hover)'}`,
+            background: rec.approved ? 'var(--green)' : 'transparent',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginTop: 1,
+            transition: 'all .15s',
+          }}
+          title={rec.approved ? 'Click to skip' : 'Click to include'}
+        >
+          {rec.approved && (
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </button>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Type badge */}
+          <div style={{ marginBottom: '.5rem' }}>
+            <span style={{
+              display: 'inline-block',
+              fontSize: '.6rem',
+              fontWeight: 800,
+              textTransform: 'uppercase',
+              letterSpacing: '.08em',
+              padding: '.2rem .5rem',
+              borderRadius: 6,
+              background: isMilestone ? 'rgba(41,128,185,0.12)' : 'rgba(107,143,113,0.12)',
+              color: isMilestone ? 'var(--blue-l)' : 'var(--green)',
+            }}>
+              {isMilestone ? 'Milestone' : 'Note'}
+            </span>
+          </div>
+
+          {/* Description */}
+          <textarea
+            value={rec.description}
+            onChange={e => onUpdate('description', e.target.value)}
+            rows={2}
+            style={{
+              width: '100%',
+              background: 'var(--bg)',
+              border: '1.5px solid var(--border)',
+              borderRadius: 10,
+              padding: '.5rem .75rem',
+              fontFamily: 'var(--font)',
+              fontSize: '.82rem',
+              color: 'var(--text)',
+              resize: 'vertical',
+              lineHeight: 1.55,
+              marginBottom: isMilestone ? '.6rem' : 0,
+            }}
+          />
+
+          {/* Milestone-only fields */}
+          {isMilestone && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
+              <div>
+                <div style={{ fontSize: '.6rem', fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '.25rem' }}>Assigned To</div>
+                <select
+                  value={rec.assigned_to}
+                  onChange={e => onUpdate('assigned_to', e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'var(--bg)',
+                    border: '1.5px solid var(--border)',
+                    borderRadius: 10,
+                    padding: '.4rem .75rem',
+                    fontFamily: 'var(--font)',
+                    fontSize: '.78rem',
+                    color: rec.assigned_to ? 'var(--text)' : 'var(--text-3)',
+                  }}
+                >
+                  <option value="">Unassigned</option>
+                  {memberNames.map(n => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontSize: '.6rem', fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.07em', marginBottom: '.25rem' }}>Target Date</div>
+                <input
+                  type="date"
+                  value={rec.target_date}
+                  onChange={e => onUpdate('target_date', e.target.value)}
+                  style={{
+                    width: '100%',
+                    background: 'var(--bg)',
+                    border: '1.5px solid var(--border)',
+                    borderRadius: 10,
+                    padding: '.4rem .75rem',
+                    fontFamily: 'var(--font)',
+                    fontSize: '.78rem',
+                    color: 'var(--text)',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

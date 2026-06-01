@@ -5,6 +5,7 @@ import { Initiative, TeamMember, InitiativeNote, NoteComment } from '@/types'
 import { fmt, fmtRelative, initials, statusClass, priorityClass, parseLinks, daysBetween } from '@/lib/ui'
 import UpdatesExpand from '@/components/shared/UpdatesExpand'
 import EditInitiativeModal from '@/components/modals/EditInitiativeModal'
+import MeetingAnalysisModal from '@/components/modals/MeetingAnalysisModal'
 
 interface Props {
   initiativeId: string
@@ -39,6 +40,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
   const [showNoteComments, setShowNoteComments] = useState<Set<string>>(new Set())
   const [editingComment, setEditingComment] = useState<{ id: string; noteId: string; draft: string } | null>(null)
   const [showEdit, setShowEdit] = useState(false)
+  const [showAnalysis, setShowAnalysis] = useState(false)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -208,6 +210,12 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
                 Complete
               </button>
             )}
+            <button className="btn btn-soft btn-sm" onClick={() => setShowAnalysis(true)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 13, height: 13 }}>
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+              Analyze Meeting
+            </button>
             <button className="btn btn-soft btn-sm" onClick={() => setShowEdit(true)}>
               <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
               Edit
@@ -618,6 +626,22 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
                 .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []) })
               onRefresh()
             }}
+        />
+      )}
+
+      {showAnalysis && initiative && (
+        <MeetingAnalysisModal
+          initiativeId={initiativeId}
+          initiativeName={initiative.task_name}
+          teamList={teamList}
+          onClose={() => setShowAnalysis(false)}
+          onApplied={() => {
+            setShowAnalysis(false)
+            fetch(`/api/initiatives/${initiativeId}`)
+              .then(r => r.json())
+              .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []) })
+            onRefresh()
+          }}
         />
       )}
     </div>
