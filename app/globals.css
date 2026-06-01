@@ -455,14 +455,22 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
 
 .milestone-table{width:100%;border-collapse:collapse;font-size:.74rem;table-layout:auto}
 .milestone-table th{text-align:left;padding:.5rem .65rem;color:var(--text-3);font-weight:700;font-size:.56rem;text-transform:uppercase;letter-spacing:.08em;border-bottom:1.5px solid var(--border);background:var(--bg);white-space:nowrap}
-.milestone-table td{padding:.7rem .65rem;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top}
+.milestone-table td{padding:.7rem .65rem;border-bottom:1px solid var(--border);color:var(--text-2);vertical-align:top;overflow:visible;max-width:none}
 .milestone-table tr:last-child td{border-bottom:none}
 .milestone-table tr:hover td{background:var(--blue-bg)}
 .milestone-table tr.milestone-divider-row:hover td{background:transparent}
 .milestone-divider-row td{padding:.4rem .65rem;border-bottom:none;background:rgba(107,143,113,0.06)}
 .milestone-divider-row span{display:inline-flex;align-items:center;font-size:.56rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green)}
 
-.milestone-by-cell{display:flex;align-items:flex-start;gap:.45rem}
+.milestone-by-cell{display:flex;align-items:flex-start;gap:.45rem;min-width:80px}
 .milestone-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.52rem;font-weight:800;color:#fff;flex-shrink:0}
+
+.milestone-inline-select{background:transparent;border:1.5px solid transparent;border-radius:8px;padding:.25rem .4rem;font-family:var(--font);font-size:.72rem;color:var(--text-2);cursor:pointer;width:100%;min-width:100px;transition:border-color .15s}
+.milestone-inline-select:hover,.milestone-inline-select:focus{border-color:var(--border-hover);background:var(--bg-w);outline:none}
+.milestone-inline-input{background:transparent;border:1.5px solid transparent;border-radius:8px;padding:.25rem .4rem;font-family:var(--font);font-size:.72rem;color:var(--text-2);width:100%;min-width:90px;transition:border-color .15s}
+.milestone-inline-input:hover,.milestone-inline-input:focus{border-color:var(--border-hover);background:var(--bg-w);outline:none}
+.milestone-desc-view{font-size:.78rem;color:var(--text-2);line-height:1.55;word-break:break-word;cursor:pointer;border-radius:6px;padding:.2rem .3rem;margin:-.2rem -.3rem;transition:background .15s}
+.milestone-desc-view:hover{background:var(--bg)}
+.milestone-desc-edit{width:100%;background:var(--bg-w);border:1.5px solid var(--blue-l);border-radius:8px;padding:.35rem .5rem;font-family:var(--font);font-size:.78rem;color:var(--text);resize:vertical;line-height:1.55;outline:none;min-width:220px}
 
 .done-checkbox{width:16px;height:16px;accent-color:var(--green);cursor:pointer;border-radius:4px;display:block;margin-top:1px}
