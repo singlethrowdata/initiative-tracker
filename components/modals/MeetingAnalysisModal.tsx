@@ -12,23 +12,29 @@ interface Props {
 }
 
 type Step = 'input' | 'review'
+type Mode = 'link' | 'paste'
 
 export default function MeetingAnalysisModal({ initiativeId, initiativeName, teamList, onClose, onApplied }: Props) {
   const [step, setStep] = useState<Step>('input')
+  const [mode, setMode] = useState<Mode>('link')
+  const [docUrl, setDocUrl] = useState('')
   const [transcript, setTranscript] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [applying, setApplying] = useState(false)
   const [error, setError] = useState('')
   const [recommendations, setRecommendations] = useState<AiRecommendation[]>([])
 
+  const canAnalyze = mode === 'link' ? docUrl.trim().length > 0 : transcript.trim().length > 0
+
   async function handleAnalyze() {
-    if (!transcript.trim()) return
+    if (!canAnalyze) return
     setAnalyzing(true)
     setError('')
+    const body = mode === 'link' ? { docUrl } : { transcript }
     const res = await fetch(`/api/initiatives/${initiativeId}/analyze`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ transcript }),
+      body: JSON.stringify(body),
     })
     const data = await res.json()
     setAnalyzing(false)
@@ -85,27 +91,71 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
 
         {step === 'input' ? (
           <>
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.25rem' }}>
               <h3 style={{ marginBottom: '.25rem' }}>Analyze Meeting Notes</h3>
               <p style={{ fontSize: '.78rem', color: 'var(--text-3)', margin: 0 }}>
-                Paste notes or a transcript from a meeting about <strong style={{ color: 'var(--text-2)' }}>{initiativeName}</strong>. Claude will suggest milestones and notes.
+                Analyze notes for <strong style={{ color: 'var(--text-2)' }}>{initiativeName}</strong>. Claude will suggest milestones and notes.
               </p>
             </div>
 
-            <div className="modal-body">
-            <label className="modal-label">Meeting Notes / Transcript</label>
-            <textarea
-              placeholder="Paste your meeting notes or transcript here…"
-              value={transcript}
-              onChange={e => setTranscript(e.target.value)}
-              rows={12}
-              style={{ resize: 'vertical', minHeight: 200 }}
-              autoFocus
-            />
+            {/* Mode toggle */}
+            <div style={{ display: 'flex', gap: '.35rem', marginBottom: '1.25rem', background: 'var(--bg)', padding: '.25rem', borderRadius: 10, width: 'fit-content' }}>
+              {(['link', 'paste'] as Mode[]).map(m => (
+                <button
+                  key={m}
+                  onClick={() => { setMode(m); setError('') }}
+                  style={{
+                    padding: '.35rem .85rem',
+                    borderRadius: 8,
+                    border: 'none',
+                    fontFamily: 'var(--font)',
+                    fontSize: '.75rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: mode === m ? 'var(--bg-w)' : 'transparent',
+                    color: mode === m ? 'var(--text)' : 'var(--text-3)',
+                    boxShadow: mode === m ? 'var(--shadow)' : 'none',
+                    transition: 'all .15s',
+                  }}
+                >
+                  {m === 'link' ? 'Google Doc Link' : 'Paste Text'}
+                </button>
+              ))}
+            </div>
 
-            {error && (
-              <p style={{ fontSize: '.78rem', color: 'var(--danger)', marginBottom: '.75rem', marginTop: '-.5rem' }}>{error}</p>
-            )}
+            <div className="modal-body">
+              {mode === 'link' ? (
+                <div>
+                  <label className="modal-label">Google Doc URL</label>
+                  <input
+                    type="url"
+                    placeholder="https://docs.google.com/document/d/…"
+                    value={docUrl}
+                    onChange={e => setDocUrl(e.target.value)}
+                    autoFocus
+                    style={{ marginBottom: '.5rem' }}
+                  />
+                  <p style={{ fontSize: '.72rem', color: 'var(--text-3)', marginBottom: 0 }}>
+                    The document must be set to <strong>Anyone with the link can view</strong>.
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="modal-label">Meeting Notes / Transcript</label>
+                  <textarea
+                    placeholder="Paste your meeting notes or transcript here…"
+                    value={transcript}
+                    onChange={e => setTranscript(e.target.value)}
+                    rows={12}
+                    style={{ resize: 'vertical', minHeight: 200 }}
+                    autoFocus
+                  />
+                </div>
+              )}
+
+              {error && (
+                <p style={{ fontSize: '.78rem', color: 'var(--danger)', marginTop: '.5rem', marginBottom: 0 }}>{error}</p>
+              )}
             </div>
 
             <div className="modal-foot">
@@ -113,7 +163,7 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
               <button
                 className="btn btn-grad btn-sm"
                 onClick={handleAnalyze}
-                disabled={analyzing || !transcript.trim()}
+                disabled={analyzing || !canAnalyze}
               >
                 {analyzing ? (
                   <>
@@ -186,7 +236,7 @@ function RecCard({ rec, memberNames, onToggle, onUpdate }: RecCardProps) {
 
   return (
     <div style={{
-      border: `1.5px solid ${rec.approved ? 'var(--border)' : 'var(--border)'}`,
+      border: '1.5px solid var(--border)',
       borderRadius: 14,
       padding: '1rem',
       background: rec.approved ? 'var(--bg-w)' : 'var(--bg)',
@@ -194,7 +244,6 @@ function RecCard({ rec, memberNames, onToggle, onUpdate }: RecCardProps) {
       transition: 'all .2s',
     }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: '.75rem' }}>
-        {/* Approve toggle */}
         <button
           onClick={onToggle}
           style={{
@@ -221,7 +270,6 @@ function RecCard({ rec, memberNames, onToggle, onUpdate }: RecCardProps) {
         </button>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Type badge */}
           <div style={{ marginBottom: '.5rem' }}>
             <span style={{
               display: 'inline-block',
@@ -238,7 +286,6 @@ function RecCard({ rec, memberNames, onToggle, onUpdate }: RecCardProps) {
             </span>
           </div>
 
-          {/* Description */}
           <textarea
             value={rec.description}
             onChange={e => onUpdate('description', e.target.value)}
@@ -258,7 +305,6 @@ function RecCard({ rec, memberNames, onToggle, onUpdate }: RecCardProps) {
             }}
           />
 
-          {/* Milestone-only fields */}
           {isMilestone && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '.5rem' }}>
               <div>

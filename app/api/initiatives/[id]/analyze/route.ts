@@ -16,10 +16,24 @@ export async function POST(req: Request, { params }: Params) {
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
   const { id } = await params
-  const { transcript } = await req.json()
+  const body = await req.json()
+  let transcript: string = body.transcript ?? ''
+
+  if (body.docUrl) {
+    const docMatch = (body.docUrl as string).match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/)
+    if (!docMatch) {
+      return NextResponse.json({ error: 'Invalid Google Doc URL. Make sure you paste the full document link.' }, { status: 400 })
+    }
+    const docId = docMatch[1]
+    const exportRes = await fetch(`https://docs.google.com/document/d/${docId}/export?format=txt`, { redirect: 'follow' })
+    if (!exportRes.ok || exportRes.url.includes('accounts.google.com')) {
+      return NextResponse.json({ error: 'Could not access this document. Make sure it is set to "Anyone with the link can view".' }, { status: 400 })
+    }
+    transcript = await exportRes.text()
+  }
 
   if (!transcript?.trim()) {
-    return NextResponse.json({ error: 'Transcript is required' }, { status: 400 })
+    return NextResponse.json({ error: 'No content found. Paste notes or check the document link.' }, { status: 400 })
   }
 
   const [initiative] = await sql`SELECT task_name, description, status FROM initiatives WHERE id = ${id}`
