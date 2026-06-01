@@ -58,28 +58,43 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
     setApplying(true)
     setError('')
 
+    const errors: string[] = []
+
     for (const rec of approved) {
       if (rec.type === 'milestone') {
-        await fetch(`/api/initiatives/${initiativeId}/updates`, {
+        const validDate = /^\d{4}-\d{2}-\d{2}$/.test(rec.target_date) ? rec.target_date : null
+        const res = await fetch(`/api/initiatives/${initiativeId}/updates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: rec.description,
-            assigned_to: rec.assigned_to,
-            target_date: rec.target_date || null,
+            assigned_to: rec.assigned_to || '',
+            target_date: validDate,
           }),
         })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          errors.push(`Milestone failed: ${data.error ?? res.statusText}`)
+        }
       } else {
-        await fetch(`/api/initiatives/${initiativeId}/notes`, {
+        const res = await fetch(`/api/initiatives/${initiativeId}/notes`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ content: rec.description }),
         })
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}))
+          errors.push(`Note failed: ${data.error ?? res.statusText}`)
+        }
       }
     }
 
     setApplying(false)
-    onApplied()
+    if (errors.length) {
+      setError(errors.join(' · '))
+    } else {
+      onApplied()
+    }
   }
 
   const approvedCount = recommendations.filter(r => r.approved).length
