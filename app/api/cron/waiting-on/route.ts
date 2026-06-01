@@ -3,69 +3,82 @@ import { sql } from '@/lib/db'
 import { sendWaitingOnReminderEmail } from '@/lib/email'
 import { getTeamMap } from '@/lib/team'
 
-// Vercel cron: weekly — send reminders for initiatives with unresolved waiting-on
+// Vercel cron: weekly — send reminders for every unique waiting-on person across open milestones
 export async function GET(req: Request) {
   const secret = req.headers.get('x-cron-secret')
   if (secret !== process.env.CRON_SECRET) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Fetch all active initiatives that have at least one open milestone with waiting_on set
   const initiatives = await sql`
-    SELECT i.*,
+    SELECT i.id, i.task_name, i.created_by, i.created_by_name,
+           i.waiting_on_set_at, i.last_waiting_on_reminder,
       COALESCE(
         json_agg(json_build_object(
           'id', u.id, 'waiting_on', u.waiting_on,
-          'completed', u.completed, 'description', u.description, 'assigned_to', u.assigned_to
-        )) FILTER (WHERE u.id IS NOT NULL),
+          'description', u.description, 'assigned_to', u.assigned_to
+        )) FILTER (WHERE u.id IS NOT NULL AND u.completed = false AND u.waiting_on IS NOT NULL AND u.waiting_on != ''),
         '[]'::json
-      ) AS updates
+      ) AS open_waiting
     FROM initiatives i
-    LEFT JOIN updates u ON u.initiative_id = i.id
+    JOIN updates u ON u.initiative_id = i.id
     WHERE i.is_archived = false
-      AND i.waiting_on IS NOT NULL
-      AND i.waiting_on != ''
+      AND u.completed = false
+      AND u.waiting_on IS NOT NULL
+      AND u.waiting_on != ''
     GROUP BY i.id
   `
 
   const teamMap = await getTeamMap()
+  const nameToEmail = Object.fromEntries(Object.entries(teamMap).map(([e, n]) => [n, e]))
   const now = Date.now()
   let sent = 0
 
   for (const initiative of initiatives) {
-    const waitingOnName = initiative.waiting_on as string
-    const setAt = initiative.waiting_on_set_at
-      ? new Date(initiative.waiting_on_set_at as string).getTime()
-      : now
-    const daysPending = Math.floor((now - setAt) / 86_400_000)
-
     const lastReminder = initiative.last_waiting_on_reminder
       ? new Date(initiative.last_waiting_on_reminder as string).getTime()
       : 0
     const daysSinceReminder = Math.floor((now - lastReminder) / 86_400_000)
 
-    if (daysPending < 2 || daysSinceReminder < 7) continue
+    // Rate limit: one batch of reminders per initiative per 7 days
+    if (daysSinceReminder < 7) continue
 
-    const waitingOnEmail = Object.entries(teamMap).find(([, name]) => name === waitingOnName)?.[0]
-    if (!waitingOnEmail) continue
+    const setAt = initiative.waiting_on_set_at
+      ? new Date(initiative.waiting_on_set_at as string).getTime()
+      : now
+    const daysPending = Math.max(1, Math.floor((now - setAt) / 86_400_000))
 
-    const updates = initiative.updates as Array<{ waiting_on: string; completed: boolean; description: string }>
-    const openActions = updates
-      .filter(u => !u.completed && u.waiting_on === waitingOnName)
-      .map(u => u.description)
-      .filter(Boolean)
+    // Don't spam on brand-new waiting-ons
+    if (daysPending < 2) continue
 
+    const openWaiting = initiative.open_waiting as Array<{ waiting_on: string; description: string }>
     const requestedByName = teamMap[initiative.created_by as string] ?? (initiative.created_by_name as string) ?? ''
 
-    await sendWaitingOnReminderEmail(
-      waitingOnEmail, waitingOnName, initiative.task_name as string,
-      daysPending, requestedByName, openActions
-    )
+    // Group open milestones by waiting_on person
+    const byPerson = new Map<string, string[]>()
+    for (const u of openWaiting) {
+      if (!u.waiting_on) continue
+      if (!byPerson.has(u.waiting_on)) byPerson.set(u.waiting_on, [])
+      byPerson.get(u.waiting_on)!.push(u.description)
+    }
+
+    // Send one email per unique waiting-on person
+    for (const [personName, actions] of byPerson) {
+      const personEmail = nameToEmail[personName]
+      if (!personEmail) continue
+      await sendWaitingOnReminderEmail(
+        personEmail, personName,
+        initiative.task_name as string,
+        daysPending, requestedByName, actions
+      )
+      sent++
+    }
 
     await sql`
       UPDATE initiatives SET last_waiting_on_reminder = ${new Date().toISOString()}
       WHERE id = ${initiative.id}
     `
-    sent++
   }
 
   return NextResponse.json({ sent })

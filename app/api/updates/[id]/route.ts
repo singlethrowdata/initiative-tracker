@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { sql, sqlUpdate } from '@/lib/db'
-import { isAdmin, getMemberName } from '@/lib/team'
+import { isAdmin, getMemberName, getTeamByName } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
+import { sendAssignedToMilestoneEmail } from '@/lib/email'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -31,7 +32,7 @@ export async function PATCH(req: Request, { params }: Params) {
   const body = await req.json()
 
   const [existing] = await sql`
-    SELECT user_email, initiative_id FROM updates WHERE id = ${id}
+    SELECT user_email, initiative_id, assigned_to FROM updates WHERE id = ${id}
   `
   const adminFlag = await isAdmin(email)
   if (!adminFlag && existing?.user_email !== email) {
@@ -45,12 +46,28 @@ export async function PATCH(req: Request, { params }: Params) {
     await syncWaitingOn(existing.initiative_id as string)
   }
 
-  if (body.description && existing?.initiative_id) {
-    const authorName = await getMemberName(email)
+  const authorName = await getMemberName(email)
+
+  if (existing?.initiative_id) {
     const [initiative] = await sql`SELECT task_name FROM initiatives WHERE id = ${existing.initiative_id}`
-    await processAndNotifyMentions(
-      body.description, (initiative?.task_name ?? '') as string, 'update', authorName, email
-    )
+    const initiativeName = (initiative?.task_name ?? '') as string
+
+    if (body.description) {
+      await processAndNotifyMentions(body.description, initiativeName, 'update', authorName, email)
+    }
+
+    if (
+      'assigned_to' in body &&
+      body.assigned_to &&
+      body.assigned_to !== existing.assigned_to
+    ) {
+      const nameMap = await getTeamByName()
+      const assignedEmail = nameMap[body.assigned_to]
+      if (assignedEmail && assignedEmail !== email) {
+        const description = (data as { description?: string }).description ?? ''
+        await sendAssignedToMilestoneEmail(assignedEmail, body.assigned_to, initiativeName, authorName, description)
+      }
+    }
   }
 
   return NextResponse.json(data)

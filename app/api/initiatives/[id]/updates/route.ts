@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { sql } from '@/lib/db'
-import { getMemberName, getTeamMap } from '@/lib/team'
+import { getMemberName, getTeamMap, getTeamByName } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
-import { sendWaitingOnEmail } from '@/lib/email'
+import { sendWaitingOnEmail, sendAssignedToMilestoneEmail } from '@/lib/email'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -86,6 +86,18 @@ export async function POST(req: Request, { params }: Params) {
     userName,
     email
   )
+
+  if (body.assigned_to) {
+    const nameMap = await getTeamByName()
+    const assignedEmail = nameMap[body.assigned_to]
+    if (assignedEmail && assignedEmail !== email) {
+      await sendAssignedToMilestoneEmail(
+        assignedEmail, body.assigned_to,
+        (initiative?.task_name ?? '') as string,
+        userName, body.description
+      )
+    }
+  }
 
   return NextResponse.json(data, { status: 201 })
 }

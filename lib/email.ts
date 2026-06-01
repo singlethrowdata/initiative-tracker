@@ -43,6 +43,23 @@ export async function sendMentionEmail(
   await send(toEmail, `${authorName} mentioned you in ${contextType}: ${contextTitle}`, html)
 }
 
+export async function sendAssignedToMilestoneEmail(
+  toEmail: string, toName: string, initiativeName: string,
+  assignedByName: string, milestoneDescription: string
+) {
+  const appUrl = APP_URL
+  const html = header('Single Throw — Initiative Tracker') +
+    card(`<p style="color:#1B2A3B;font-size:13px;margin:0 0 6px"><strong>${assignedByName}</strong> assigned you to a milestone on:</p>
+      <p style="color:#1A5276;font-size:15px;font-weight:700;margin:0 0 12px">${initiativeName}</p>
+      <div style="background:#F4F6F8;border-radius:8px;padding:14px;margin:0 0 16px">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#1A5276;margin-bottom:8px">Milestone</div>
+        <div style="font-size:13px;color:#1B2A3B;line-height:1.6">${milestoneDescription}</div>
+      </div>
+      <a href="${appUrl}" style="display:inline-block;padding:10px 22px;background:#1A5276;color:#fff;border-radius:6px;text-decoration:none;font-size:13px;font-weight:700">View in Tracker</a>
+      ${footer}`)
+  await send(toEmail, `You've been assigned a milestone — ${initiativeName}`, html)
+}
+
 export async function sendWaitingOnEmail(
   toEmail: string, toName: string, initiativeName: string,
   requestedByName: string, updateDescription?: string
