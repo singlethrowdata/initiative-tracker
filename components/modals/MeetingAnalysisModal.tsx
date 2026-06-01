@@ -92,6 +92,7 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
               </p>
             </div>
 
+            <div className="modal-body">
             <label className="modal-label">Meeting Notes / Transcript</label>
             <textarea
               placeholder="Paste your meeting notes or transcript here…"
@@ -105,6 +106,7 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
             {error && (
               <p style={{ fontSize: '.78rem', color: 'var(--danger)', marginBottom: '.75rem', marginTop: '-.5rem' }}>{error}</p>
             )}
+            </div>
 
             <div className="modal-foot">
               <button className="btn btn-soft btn-sm" onClick={onClose}>Cancel</button>
@@ -132,7 +134,7 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
               </p>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '.75rem', overflowY: 'auto', maxHeight: '55vh', paddingRight: '.25rem' }}>
+            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '.75rem' }}>
               {recommendations.map(rec => (
                 <RecCard
                   key={rec.id}
@@ -142,11 +144,11 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
                   onUpdate={(field, val) => updateField(rec.id, field, val)}
                 />
               ))}
-            </div>
 
-            {error && (
-              <p style={{ fontSize: '.78rem', color: 'var(--danger)', marginTop: '.75rem', marginBottom: 0 }}>{error}</p>
-            )}
+              {error && (
+                <p style={{ fontSize: '.78rem', color: 'var(--danger)', margin: 0 }}>{error}</p>
+              )}
+            </div>
 
             <div className="modal-foot">
               <button className="btn btn-soft btn-sm" onClick={() => { setStep('input'); setError('') }}>

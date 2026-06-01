@@ -55,6 +55,7 @@ export default function EditInitiativeModal({ initiative, teamList, onClose, onS
       <div className="modal">
         <h3>Edit Initiative</h3>
         <form onSubmit={handleSubmit}>
+          <div className="modal-body">
           <label className="modal-label">Name <span className="req">*</span></label>
           <input type="text" placeholder="Initiative name…" value={form.task_name} onChange={e => set('task_name', e.target.value)} autoFocus />
 
@@ -119,6 +120,7 @@ export default function EditInitiativeModal({ initiative, teamList, onClose, onS
           <input type="text" placeholder="https://… (separate multiple with commas)" value={form.links} onChange={e => set('links', e.target.value)} />
 
           {error && <p style={{ color: 'var(--danger)', fontSize: '.8rem', marginBottom: '.5rem' }}>{error}</p>}
+          </div>
 
           <div className="modal-foot">
             <button type="button" className="btn btn-outline" onClick={onClose}>Cancel</button>
