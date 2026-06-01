@@ -18,6 +18,7 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
   const [step, setStep] = useState<Step>('input')
   const [mode, setMode] = useState<Mode>('link')
   const [docUrl, setDocUrl] = useState('')
+  const [docTitle, setDocTitle] = useState('')
   const [transcript, setTranscript] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [applying, setApplying] = useState(false)
@@ -89,6 +90,23 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
       }
     }
 
+    // Add the Google Doc URL to the initiative's links section
+    if (mode === 'link' && docUrl && !errors.length) {
+      const iRes = await fetch(`/api/initiatives/${initiativeId}`)
+      const iData = await iRes.json()
+      const existing = iData.initiative?.links ?? ''
+      const newEntry = `${docTitle.trim() || 'Meeting Notes'} ${docUrl}`
+      const alreadyAdded = existing.includes(docUrl)
+      if (!alreadyAdded) {
+        const updated = existing ? `${existing},${newEntry}` : newEntry
+        await fetch(`/api/initiatives/${initiativeId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ links: updated }),
+        })
+      }
+    }
+
     setApplying(false)
     if (errors.length) {
       setError(errors.join(' · '))
@@ -148,6 +166,14 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
                     value={docUrl}
                     onChange={e => setDocUrl(e.target.value)}
                     autoFocus
+                    style={{ marginBottom: '.65rem' }}
+                  />
+                  <label className="modal-label">Link Title <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional — defaults to "Meeting Notes")</span></label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Q2 Planning Meeting — June 1"
+                    value={docTitle}
+                    onChange={e => setDocTitle(e.target.value)}
                     style={{ marginBottom: '.5rem' }}
                   />
                   <p style={{ fontSize: '.72rem', color: 'var(--text-3)', marginBottom: 0 }}>
