@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { sql } from '@/lib/db'
 import { sendApprovalDecisionEmail } from '@/lib/email'
-import { appendToDocRegistry, appendToTechStack } from '@/lib/sheets'
 import { getActiveTeam } from '@/lib/team'
 
 const DEPT_CODE: Record<string, string> = {
@@ -48,36 +47,10 @@ export async function GET(req: Request, { params }: Params) {
       WHERE id = ${initiative.id}
     `
 
-    const completedByName = (initiative.completion_requester_name ?? initiative.created_by_name ?? '') as string
     const docApiUrl = (process.env.DOC_REGISTRY_API_URL ?? '').replace(/\/$/, '')
     const docApiSecret = process.env.DOC_REGISTRY_INTERNAL_SECRET
 
     const pushes: Promise<unknown>[] = []
-
-    // Google Sheet writes (legacy log)
-    pushes.push(
-      appendToDocRegistry({
-        task_name: initiative.task_name as string,
-        department: (initiative.department ?? '') as string,
-        description: (initiative.description ?? '') as string,
-        completion_desc: (initiative.completion_desc ?? '') as string,
-        sop_link: (initiative.sop_link ?? '') as string,
-        created_by_name: (initiative.created_by_name ?? '') as string,
-        completed_by_name: completedByName,
-        completed_at: now,
-      }),
-      appendToTechStack({
-        task_name: initiative.task_name as string,
-        type: (initiative.type ?? '') as string,
-        department: (initiative.department ?? '') as string,
-        completion_desc: (initiative.completion_desc ?? '') as string,
-        participants: (initiative.participants ?? '') as string,
-        sop_link: (initiative.sop_link ?? '') as string,
-        completion_links: (initiative.completion_links ?? '') as string,
-        completed_by_name: completedByName,
-        completed_at: now,
-      })
-    )
 
     // Doc Registry API push (requires sop_link + doc fields)
     if (initiative.sop_link && initiative.doc_purpose && initiative.doc_context && initiative.doc_owner && docApiUrl && docApiSecret) {
