@@ -36,7 +36,7 @@ export async function GET(req: Request) {
     env: {
       DOC_REGISTRY_API_URL: process.env.DOC_REGISTRY_API_URL ?? 'NOT SET',
       DOC_REGISTRY_INTERNAL_SECRET: process.env.DOC_REGISTRY_INTERNAL_SECRET ? 'SET' : 'NOT SET',
-      TECH_STACK_HUB_URL: process.env.TECH_STACK_HUB_URL ?? 'NOT SET',
+      TECH_STACK_API_URL: process.env.TECH_STACK_API_URL ?? 'NOT SET',
       TECH_STACK_INTERNAL_SECRET: process.env.TECH_STACK_INTERNAL_SECRET ? 'SET' : 'NOT SET',
     },
   })

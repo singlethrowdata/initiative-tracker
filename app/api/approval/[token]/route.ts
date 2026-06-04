@@ -3,20 +3,6 @@ import { sql } from '@/lib/db'
 import { sendApprovalDecisionEmail } from '@/lib/email'
 import { appendToDocRegistry, appendToTechStack } from '@/lib/sheets'
 import { getActiveTeam } from '@/lib/team'
-import crypto from 'crypto'
-
-function encryptForTechStack(text: string): { encrypted: string; iv: string } {
-  if (!text || !process.env.TECH_STACK_ENCRYPTION_KEY) return { encrypted: '', iv: '' }
-  const key = Buffer.from(process.env.TECH_STACK_ENCRYPTION_KEY, 'hex')
-  const iv = crypto.randomBytes(12)
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
-  const encrypted = Buffer.concat([cipher.update(text, 'utf8'), cipher.final()])
-  const tag = cipher.getAuthTag()
-  return {
-    encrypted: `${encrypted.toString('base64')}:${tag.toString('base64')}`,
-    iv: iv.toString('base64'),
-  }
-}
 
 const DEPT_CODE: Record<string, string> = {
   'Operations': 'OPS', 'Content': 'CONT', 'SEO': 'SEO', 'Design': 'CR',
@@ -65,8 +51,6 @@ export async function GET(req: Request, { params }: Params) {
     const completedByName = (initiative.completion_requester_name ?? initiative.created_by_name ?? '') as string
     const docApiUrl = (process.env.DOC_REGISTRY_API_URL ?? '').replace(/\/$/, '')
     const docApiSecret = process.env.DOC_REGISTRY_INTERNAL_SECRET
-    const tsApiUrl = (process.env.TECH_STACK_HUB_URL ?? '').replace(/\/$/, '')
-    const tsApiSecret = process.env.TECH_STACK_INTERNAL_SECRET
 
     const pushes: Promise<unknown>[] = []
 
@@ -127,27 +111,18 @@ export async function GET(req: Request, { params }: Params) {
       })
     }
 
-    // Tech Stack Hub — direct Supabase insert (bypasses internal API)
+    // Tech Stack Hub — internal API (writes to the hub's Neon DB; hub encrypts the password)
     if (initiative.type === 'Tool' && initiative.ts_tab) {
-      const supabaseUrl = process.env.TECH_STACK_SUPABASE_URL
-      const supabaseKey = process.env.TECH_STACK_SUPABASE_KEY
-      if (supabaseUrl && supabaseKey) {
-        const { encrypted: password_encrypted, iv: password_iv } = encryptForTechStack((initiative.ts_password ?? '') as string)
-        const toolId = crypto.randomUUID().replace(/-/g, '').substring(0, 8)
+      const tsApiUrl = process.env.TECH_STACK_API_URL
+      const tsSecret = process.env.TECH_STACK_INTERNAL_SECRET
+      if (tsApiUrl && tsSecret) {
         pushes.push(
-          fetch(`${supabaseUrl}/rest/v1/tools`, {
+          fetch(`${tsApiUrl}/api/tools/internal`, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${supabaseKey}`,
-              'apikey': supabaseKey,
-              'Prefer': 'return=minimal',
-            },
+            headers: { 'Content-Type': 'application/json', 'x-api-secret': tsSecret },
             body: JSON.stringify({
-              id: toolId,
               tool_name: initiative.task_name,
               tab: initiative.ts_tab,
-              type: (initiative.ts_category ?? '') as string,
               description: (initiative.description ?? '') as string,
               access_url: (initiative.completion_links ?? '') as string,
               responsible_for_update: (initiative.ts_responsible ?? '') as string,
@@ -155,21 +130,18 @@ export async function GET(req: Request, { params }: Params) {
               category: (initiative.ts_category ?? '') as string,
               use_case: (initiative.ts_use_case ?? '') as string,
               client_owner: (initiative.ts_client_owner ?? null),
-              google_signin: false,
               created_by: (initiative.completion_requester_email ?? initiative.created_by) as string,
-              created_date: now.split('T')[0],
-              password_encrypted,
-              password_iv,
+              password: (initiative.ts_password ?? '') as string,
               notes: (initiative.ts_notes ?? '') as string,
               tags: (initiative.doc_tags ?? '') as string,
               username: (initiative.ts_username ?? '') as string,
             }),
-          }).then(r => { console.log('Tech Stack Supabase push status:', r.status); return r.text() })
+          }).then(r => { console.log('Tech Stack push status:', r.status); return r.text() })
             .then(t => console.log('Tech Stack response:', t))
-            .catch(err => console.error('Tech Stack Supabase push failed:', err))
+            .catch(err => console.error('Tech Stack push failed:', err))
         )
       } else {
-        console.log('Tech Stack push skipped — TECH_STACK_SUPABASE_URL or TECH_STACK_SUPABASE_KEY not set')
+        console.log('Tech Stack push skipped — TECH_STACK_API_URL or TECH_STACK_INTERNAL_SECRET not set')
       }
     }
 
