@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { sql } from '@/lib/db'
-import { getMemberName } from '@/lib/team'
+import { getMemberName, getTeamByName } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
+import { sendAddedToInitiativeEmail } from '@/lib/email'
 
 export async function GET() {
   const session = await getSession()
@@ -74,6 +75,20 @@ export async function POST(req: Request) {
     createdByName,
     email
   )
+
+  // Notify each participant (except the creator) that they've been added
+  const participantNames = String(body.participants ?? '')
+    .split(',').map((s: string) => s.trim()).filter(Boolean)
+  if (participantNames.length) {
+    const nameToEmail = await getTeamByName()
+    const notified = new Set<string>()
+    for (const name of participantNames) {
+      const memberEmail = nameToEmail[name]
+      if (!memberEmail || memberEmail.toLowerCase() === email || notified.has(memberEmail.toLowerCase())) continue
+      notified.add(memberEmail.toLowerCase())
+      await sendAddedToInitiativeEmail(memberEmail, name, body.task_name, createdByName, body.description)
+    }
+  }
 
   return NextResponse.json(data, { status: 201 })
 }
