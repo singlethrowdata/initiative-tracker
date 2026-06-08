@@ -1,6 +1,7 @@
 import { AuthOptions } from 'next-auth'
 import GoogleProvider from 'next-auth/providers/google'
 import { sql } from './db'
+import { getActiveTeam, HARDCODED_ADMINS } from './team'
 
 const ALLOWED_DOMAIN = 'singlethrow.com'
 
@@ -46,20 +47,22 @@ export const authOptions: AuthOptions = {
     },
     async session({ session, token }) {
       if (session.user?.email) {
+        const email = session.user.email.toLowerCase()
+        // Doc Registry sheet (the hub) is the source of truth; DB is the fallback.
+        const member = (await getActiveTeam()).find(m => m.email === email)
         const [data] = await sql`
           SELECT display_name, role, status
           FROM team_members
-          WHERE email = ${session.user.email.toLowerCase()}
+          WHERE email = ${email}
         `
-        if (data) {
-          session.user.name = (data.display_name as string) ?? session.user.name
-          // @ts-expect-error — extending session type
-          session.user.role = data.role ?? 'Employee'
-          // @ts-expect-error
-          session.user.isAdmin = data.role === 'Admin'
-          // @ts-expect-error
-          session.user.isActive = data.status !== 'Inactive'
-        }
+        const role = member?.role ?? (data?.role as string) ?? 'Employee'
+        session.user.name = member?.display_name ?? (data?.display_name as string) ?? session.user.name
+        // @ts-expect-error — extending session type
+        session.user.role = role
+        // @ts-expect-error
+        session.user.isAdmin = role === 'Admin' || HARDCODED_ADMINS.includes(email)
+        // @ts-expect-error
+        session.user.isActive = member ? member.status !== 'Inactive' : (data?.status !== 'Inactive')
       }
       return session
     },

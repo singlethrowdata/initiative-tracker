@@ -41,6 +41,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
   const [editingComment, setEditingComment] = useState<{ id: string; noteId: string; draft: string } | null>(null)
   const [showEdit, setShowEdit] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
+  const [milestoneReload, setMilestoneReload] = useState(0)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -604,6 +605,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
               user={user}
               teamList={teamList}
               onRefresh={onRefresh}
+              reloadKey={milestoneReload}
             />
           </div>
 
@@ -640,6 +642,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
             fetch(`/api/initiatives/${initiativeId}`)
               .then(r => r.json())
               .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []) })
+            setMilestoneReload(n => n + 1)
             onRefresh()
           }}
         />

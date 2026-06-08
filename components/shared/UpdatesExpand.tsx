@@ -9,6 +9,7 @@ interface Props {
   user: { email: string; name: string }
   teamList: TeamMember[]
   onRefresh: () => void
+  reloadKey?: number
 }
 
 const PARTICIPANT_GRADS = [
@@ -25,7 +26,7 @@ function avatarGrad(name: string) {
   return PARTICIPANT_GRADS[Math.abs(hash) % PARTICIPANT_GRADS.length]
 }
 
-export default function UpdatesExpand({ initiative, user, teamList, onRefresh }: Props) {
+export default function UpdatesExpand({ initiative, user, teamList, onRefresh, reloadKey }: Props) {
   const [updates, setUpdates] = useState<Update[]>([])
   const [loading, setLoading] = useState(true)
   const [desc, setDesc] = useState('')
@@ -43,7 +44,7 @@ export default function UpdatesExpand({ initiative, user, teamList, onRefresh }:
     setLoading(false)
   }, [initiative.id])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load() }, [load, reloadKey])
 
   async function handleAdd() {
     if (!desc.trim()) return

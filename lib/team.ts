@@ -31,11 +31,16 @@ export async function getTeamByName(): Promise<Record<string, string>> {
   return Object.fromEntries(team.map(m => [m.display_name, m.email]))
 }
 
-const HARDCODED_ADMINS = ['tech@singlethrow.com', 'submissions@singlethrow.com']
+export const HARDCODED_ADMINS = ['tech@singlethrow.com', 'submissions@singlethrow.com']
 
 export async function isAdmin(email: string): Promise<boolean> {
-  if (HARDCODED_ADMINS.includes(email.toLowerCase())) return true
-  const [data] = await sql`SELECT role FROM team_members WHERE email = ${email.toLowerCase()}`
+  const e = email.toLowerCase()
+  if (HARDCODED_ADMINS.includes(e)) return true
+  // Doc Registry sheet (the hub) is the source of truth.
+  const member = (await getActiveTeam()).find(m => m.email === e)
+  if (member) return member.role === 'Admin'
+  // Fallback: DB, only if the person isn't in the live directory.
+  const [data] = await sql`SELECT role FROM team_members WHERE email = ${e}`
   return data?.role === 'Admin'
 }
 
