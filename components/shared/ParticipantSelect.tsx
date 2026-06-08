@@ -11,6 +11,7 @@ interface Props {
 
 export default function ParticipantSelect({ teamList, value, onChange }: Props) {
   const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
   const ref = useRef<HTMLDivElement>(null)
 
   const selected = new Set(
@@ -23,6 +24,10 @@ export default function ParticipantSelect({ teamList, value, onChange }: Props) 
     onChange([...next].join(', '))
   }
 
+  const filtered = teamList.filter(m =>
+    m.display_name.toLowerCase().includes(query.trim().toLowerCase())
+  )
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
@@ -30,6 +35,10 @@ export default function ParticipantSelect({ teamList, value, onChange }: Props) 
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  useEffect(() => {
+    if (!open) setQuery('')
+  }, [open])
 
   const label = selected.size === 0
     ? 'Select participants…'
@@ -51,16 +60,29 @@ export default function ParticipantSelect({ teamList, value, onChange }: Props) 
       </button>
       {open && (
         <div className="participant-select-dropdown">
-          {teamList.map(m => (
-            <label key={m.email} className="participant-select-option">
-              <input
-                type="checkbox"
-                checked={selected.has(m.display_name)}
-                onChange={() => toggle(m.display_name)}
-              />
-              <span>{m.display_name}</span>
-            </label>
-          ))}
+          <div className="participant-select-search">
+            <input
+              type="text"
+              autoFocus
+              placeholder="Search participants…"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+            />
+          </div>
+          {filtered.length === 0 ? (
+            <div className="participant-select-empty">No matches</div>
+          ) : (
+            filtered.map(m => (
+              <label key={m.email} className="participant-select-option">
+                <input
+                  type="checkbox"
+                  checked={selected.has(m.display_name)}
+                  onChange={() => toggle(m.display_name)}
+                />
+                <span>{m.display_name}</span>
+              </label>
+            ))
+          )}
         </div>
       )}
     </div>
