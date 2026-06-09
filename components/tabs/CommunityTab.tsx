@@ -179,7 +179,6 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
 
   const renderPost = (post: typeof posts[number], idx: number, showRank: boolean) => {
     const rankClass = idx === 0 ? 'r1' : idx === 1 ? 'r2' : idx === 2 ? 'r3' : 'rn'
-    const showComments = expandedComments.has(post.id)
     const isOwner = post.user_email === user.email
     const isNew = (Date.now() - new Date(post.created_at).getTime()) < 86_400_000 * 2
     const commentCount = post.community_comments?.length ?? 0
@@ -278,7 +277,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
           </div>
         )}
 
-        {showComments && (
+        {(
           <div className="comments">
             {(post.community_comments ?? []).map(c => {
               const canDeleteComment = c.user_email === user.email || canDelete
