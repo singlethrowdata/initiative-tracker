@@ -32,17 +32,22 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
     setAnalyzing(true)
     setError('')
     const body = mode === 'link' ? { docUrl } : { transcript }
-    const res = await fetch(`/api/initiatives/${initiativeId}/analyze`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-    const data = await res.json()
-    setAnalyzing(false)
-    if (!res.ok) { setError(data.error ?? 'Analysis failed. Please try again.'); return }
-    if (!data.recommendations?.length) { setError('No recommendations found in these notes.'); return }
-    setRecommendations(data.recommendations)
-    setStep('review')
+    try {
+      const res = await fetch(`/api/initiatives/${initiativeId}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error ?? 'Analysis failed. Please try again.'); return }
+      if (!data.recommendations?.length) { setError('No recommendations found in these notes.'); return }
+      setRecommendations(data.recommendations)
+      setStep('review')
+    } catch {
+      setError('Analysis failed. Please try again.')
+    } finally {
+      setAnalyzing(false)
+    }
   }
 
   function toggleApproval(id: string) {

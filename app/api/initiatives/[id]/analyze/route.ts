@@ -15,6 +15,7 @@ export async function POST(req: Request, { params }: Params) {
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+  try {
   const { id } = await params
   const body = await req.json()
   let transcript: string = body.transcript ?? ''
@@ -131,4 +132,15 @@ Be specific and actionable. Skip anything already covered by the existing milest
   }))
 
   return NextResponse.json({ recommendations: withIds })
+  } catch (err) {
+    console.error('Meeting analysis failed:', err)
+    const raw = err instanceof Error ? err.message : ''
+    if (/credit balance is too low|insufficient.*credit|billing/i.test(raw)) {
+      return NextResponse.json(
+        { error: 'Not enough Anthropic credits to analyze meeting notes. Add credits to the Anthropic account to re-enable this feature.' },
+        { status: 402 },
+      )
+    }
+    return NextResponse.json({ error: raw || 'Analysis failed. Please try again.' }, { status: 500 })
+  }
 }
