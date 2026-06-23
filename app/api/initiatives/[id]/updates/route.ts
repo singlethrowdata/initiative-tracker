@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/session'
 import { sql } from '@/lib/db'
-import { getMemberName, getTeamMap, getTeamByName } from '@/lib/team'
+import { getMemberName, getTeamByName } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
-import { sendWaitingOnEmail, sendAssignedToMilestoneEmail } from '@/lib/email'
+import { sendAssignedToMilestoneEmail } from '@/lib/email'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -42,6 +42,11 @@ export async function POST(req: Request, { params }: Params) {
   const body = await req.json()
   const userName = await getMemberName(email)
 
+  const targetDate = typeof body.target_date === 'string' ? body.target_date.slice(0, 10) : ''
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+    return NextResponse.json({ error: 'A target date is required for every milestone.' }, { status: 400 })
+  }
+
   const [data] = await sql`
     INSERT INTO updates (
       initiative_id, user_email, user_name, description, assigned_to,
@@ -50,7 +55,7 @@ export async function POST(req: Request, { params }: Params) {
       ${id}, ${email}, ${userName},
       ${body.description ?? ''}, ${body.assigned_to ?? ''},
       ${body.links ?? ''}, ${body.waiting_on ?? ''},
-      ${body.target_date ?? null}, ${body.participants ?? ''}, false
+      ${targetDate}, ${body.participants ?? ''}, false
     )
     RETURNING *
   `
@@ -63,17 +68,9 @@ export async function POST(req: Request, { params }: Params) {
         updated_at = ${new Date().toISOString()}
       WHERE id = ${id}
     `
-    const teamMap = await getTeamMap()
-    const waitingOnEmail = Object.entries(teamMap).find(([, name]) => name === body.waiting_on)?.[0]
-    if (waitingOnEmail) {
-      const [initiative] = await sql`SELECT task_name FROM initiatives WHERE id = ${id}`
-      if (initiative) {
-        await sendWaitingOnEmail(
-          waitingOnEmail, body.waiting_on,
-          initiative.task_name as string, userName, body.description
-        )
-      }
-    }
+    // No immediate "waiting on" email — whoever was just named already knows.
+    // The weekly cron emails them only once the milestone is overdue, and
+    // never when they set the waiting-on on their own milestone.
   } else {
     await sql`UPDATE initiatives SET updated_at = ${new Date().toISOString()} WHERE id = ${id}`
   }

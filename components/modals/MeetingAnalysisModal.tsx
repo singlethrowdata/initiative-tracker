@@ -61,6 +61,14 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
   async function handleApply() {
     const approved = recommendations.filter(r => r.approved)
     if (!approved.length) return
+
+    // Due dates are mandatory — every approved milestone needs one before applying
+    const missingDate = approved.filter(r => r.type === 'milestone' && !/^\d{4}-\d{2}-\d{2}$/.test(r.target_date))
+    if (missingDate.length) {
+      setError(`Set a target date on every approved milestone before applying (${missingDate.length} missing).`)
+      return
+    }
+
     setApplying(true)
     setError('')
 
@@ -68,14 +76,13 @@ export default function MeetingAnalysisModal({ initiativeId, initiativeName, tea
 
     for (const rec of approved) {
       if (rec.type === 'milestone') {
-        const validDate = /^\d{4}-\d{2}-\d{2}$/.test(rec.target_date) ? rec.target_date : null
         const res = await fetch(`/api/initiatives/${initiativeId}/updates`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             description: rec.description,
             assigned_to: rec.assigned_to || '',
-            target_date: validDate,
+            target_date: rec.target_date,
           }),
         })
         if (!res.ok) {

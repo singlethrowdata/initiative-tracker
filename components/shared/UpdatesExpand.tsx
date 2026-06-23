@@ -47,7 +47,7 @@ export default function UpdatesExpand({ initiative, user, teamList, onRefresh, r
   useEffect(() => { load() }, [load, reloadKey])
 
   async function handleAdd() {
-    if (!desc.trim()) return
+    if (!desc.trim() || !targetDate) return
     setPosting(true)
     const res = await fetch(`/api/initiatives/${initiative.id}/updates`, {
       method: 'POST',
@@ -132,8 +132,8 @@ export default function UpdatesExpand({ initiative, user, teamList, onRefresh, r
             </select>
           </div>
           <div className="milestone-form-group">
-            <label className="milestone-form-label">TARGET DATE</label>
-            <input type="date" className="milestone-form-select" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
+            <label className="milestone-form-label">TARGET DATE <span style={{ color: 'var(--danger)' }}>*</span></label>
+            <input type="date" required className="milestone-form-select" value={targetDate} onChange={e => setTargetDate(e.target.value)} />
           </div>
         </div>
         <input
@@ -144,7 +144,12 @@ export default function UpdatesExpand({ initiative, user, teamList, onRefresh, r
           onChange={e => setLinks(e.target.value)}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '.5rem' }}>
-          <button className="btn btn-grad btn-sm" onClick={handleAdd} disabled={posting || !desc.trim()}>
+          <button
+            className="btn btn-grad btn-sm"
+            onClick={handleAdd}
+            disabled={posting || !desc.trim() || !targetDate}
+            title={!targetDate ? 'Set a target date first' : undefined}
+          >
             {posting ? '…' : '+ Add'}
           </button>
         </div>
@@ -418,9 +423,10 @@ function MilestoneRow({ u, user, today, teamList, showComments, setShowComments,
         <input
           type="date"
           className="milestone-inline-input"
+          required
           value={u.target_date ? String(u.target_date).slice(0, 10) : ''}
           disabled={u.completed}
-          onChange={e => onUpdate(u.id, { target_date: e.target.value || null })}
+          onChange={e => { if (e.target.value) onUpdate(u.id, { target_date: e.target.value }) }}
         />
       </td>
 

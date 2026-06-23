@@ -123,7 +123,7 @@ export async function sendWaitingOnEmail(
 
 export async function sendWaitingOnReminderEmail(
   toEmail: string, toName: string, initiativeName: string,
-  daysPending: number, requestedByName: string, pendingActions: string[]
+  daysOverdue: number, requestedByName: string, pendingActions: string[]
 ) {
   const actionsBlock = pendingActions.length
     ? `<div style="background:#F4F6F8;border-radius:8px;padding:14px;margin:0 0 12px;color:#4A6274;font-size:13px;line-height:1.6">
@@ -140,12 +140,12 @@ export async function sendWaitingOnReminderEmail(
       <p style="color:#1A5276;font-size:15px;font-weight:700;margin:0 0 12px">${initiativeName}</p>
       ${actionsBlock}
       <div style="background:#FFF3E0;border-left:4px solid #D4920A;border-radius:4px;padding:14px;margin:0 0 16px;color:#4A6274;font-size:13px;line-height:1.6">
-        <strong>${daysPending} days</strong> since assigned. Please provide an update.
+        <strong>${daysOverdue} days</strong> overdue. Please provide an update.
       </div>
       <p style="color:#8899A6;font-size:11px;margin:0">Weekly reminder until resolved.</p>
     </div>
   </div>`
-  await send(toEmail, `Reminder (${daysPending}d): Waiting — ${initiativeName}`, html)
+  await send(toEmail, `Reminder (${daysOverdue}d overdue): Waiting — ${initiativeName}`, html)
 }
 
 export async function sendApprovalRequestEmail(

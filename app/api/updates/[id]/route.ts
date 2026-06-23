@@ -31,6 +31,14 @@ export async function PATCH(req: Request, { params }: Params) {
   const email = session.user.email.toLowerCase()
   const body = await req.json()
 
+  // Due dates are mandatory — block any edit that would clear/invalidate it
+  if ('target_date' in body) {
+    const td = typeof body.target_date === 'string' ? body.target_date.slice(0, 10) : ''
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(td)) {
+      return NextResponse.json({ error: 'A target date is required — it cannot be cleared.' }, { status: 400 })
+    }
+  }
+
   const [existing] = await sql`
     SELECT user_email, initiative_id, assigned_to FROM updates WHERE id = ${id}
   `

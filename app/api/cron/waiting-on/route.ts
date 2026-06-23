@@ -17,7 +17,8 @@ export async function GET(req: Request) {
       COALESCE(
         json_agg(json_build_object(
           'id', u.id, 'waiting_on', u.waiting_on,
-          'description', u.description, 'assigned_to', u.assigned_to
+          'description', u.description, 'assigned_to', u.assigned_to,
+          'target_date', u.target_date, 'posted_by', u.user_name
         )) FILTER (WHERE u.id IS NOT NULL AND u.completed = false AND u.waiting_on IS NOT NULL AND u.waiting_on != ''),
         '[]'::json
       ) AS open_waiting
@@ -44,33 +45,41 @@ export async function GET(req: Request) {
     // Rate limit: one batch of reminders per initiative per 7 days
     if (daysSinceReminder < 7) continue
 
-    const setAt = initiative.waiting_on_set_at
-      ? new Date(initiative.waiting_on_set_at as string).getTime()
-      : now
-    const daysPending = Math.max(1, Math.floor((now - setAt) / 86_400_000))
-
-    // Don't spam on brand-new waiting-ons
-    if (daysPending < 2) continue
-
-    const openWaiting = initiative.open_waiting as Array<{ waiting_on: string; description: string }>
+    const openWaiting = initiative.open_waiting as Array<{
+      waiting_on: string; description: string; target_date: string | null; posted_by: string | null
+    }>
     const requestedByName = teamMap[initiative.created_by as string] ?? (initiative.created_by_name as string) ?? ''
 
-    // Group open milestones by waiting_on person
-    const byPerson = new Map<string, string[]>()
+    // Only remind once a milestone is overdue (past its target date), and never
+    // email the person who set the waiting-on on their own milestone — they know.
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const byPerson = new Map<string, { actions: string[]; daysOverdue: number }>()
     for (const u of openWaiting) {
       if (!u.waiting_on) continue
-      if (!byPerson.has(u.waiting_on)) byPerson.set(u.waiting_on, [])
-      byPerson.get(u.waiting_on)!.push(u.description)
+      if (u.posted_by && u.waiting_on === u.posted_by) continue
+      if (!u.target_date) continue
+      const due = new Date(u.target_date as string)
+      if (Number.isNaN(due.getTime())) continue
+      const daysOverdue = Math.floor((startOfToday.getTime() - due.getTime()) / 86_400_000)
+      if (daysOverdue < 1) continue
+      const entry = byPerson.get(u.waiting_on) ?? { actions: [], daysOverdue: 0 }
+      entry.actions.push(u.description)
+      entry.daysOverdue = Math.max(entry.daysOverdue, daysOverdue)
+      byPerson.set(u.waiting_on, entry)
     }
 
+    // Nothing overdue for this initiative — skip without touching the rate-limit stamp
+    if (byPerson.size === 0) continue
+
     // Send one email per unique waiting-on person
-    for (const [personName, actions] of byPerson) {
+    for (const [personName, { actions, daysOverdue }] of byPerson) {
       const personEmail = nameToEmail[personName]
       if (!personEmail) continue
       await sendWaitingOnReminderEmail(
         personEmail, personName,
         initiative.task_name as string,
-        daysPending, requestedByName, actions
+        daysOverdue, requestedByName, actions
       )
       sent++
     }
