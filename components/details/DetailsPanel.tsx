@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Initiative, TeamMember, InitiativeNote, NoteComment } from '@/types'
+import { Initiative, TeamMember, InitiativeNote, NoteComment, CommunityIdeaLink, CommunityPost } from '@/types'
 import { fmt, fmtRelative, initials, statusClass, priorityClass, parseLinks, daysBetween } from '@/lib/ui'
 import UpdatesExpand from '@/components/shared/UpdatesExpand'
 import EditInitiativeModal from '@/components/modals/EditInitiativeModal'
@@ -42,6 +42,12 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
   const [showEdit, setShowEdit] = useState(false)
   const [showAnalysis, setShowAnalysis] = useState(false)
   const [milestoneReload, setMilestoneReload] = useState(0)
+  const [communityIdeas, setCommunityIdeas] = useState<CommunityIdeaLink[]>([])
+  const [attachOpen, setAttachOpen] = useState(false)
+  const [attachPosts, setAttachPosts] = useState<CommunityPost[]>([])
+  const [attachLoading, setAttachLoading] = useState(false)
+  const [attachSearch, setAttachSearch] = useState('')
+  const [attachingId, setAttachingId] = useState<string | null>(null)
 
   useEffect(() => {
     document.body.style.overflow = 'hidden'
@@ -54,6 +60,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
       .then(data => {
         setInitiative(data.initiative)
         setNotes(data.notes ?? [])
+        setCommunityIdeas(data.communityIdeas ?? [])
         setLoading(false)
         requestAnimationFrame(() => setOpen(true))
       })
@@ -163,6 +170,46 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
     setInitiative(prev => prev ? { ...prev, links: updated } : prev)
     onRefresh()
   }
+
+  async function openAttach() {
+    setAttachOpen(true)
+    if (attachPosts.length === 0) {
+      setAttachLoading(true)
+      const data = await fetch('/api/community').then(r => r.json())
+      setAttachPosts(Array.isArray(data) ? data : [])
+      setAttachLoading(false)
+    }
+  }
+
+  async function handleAttach(postId: string) {
+    setAttachingId(postId)
+    const res = await fetch(`/api/initiatives/${initiativeId}/community-links`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ post_id: postId }),
+    })
+    setAttachingId(null)
+    if (!res.ok) return
+    const idea: CommunityIdeaLink = await res.json()
+    if (idea) setCommunityIdeas(prev => [idea, ...prev.filter(i => i.post_id !== postId)])
+    setAttachPosts(prev => prev.map(p => p.id === postId ? { ...p, is_resolved: true } : p))
+    setAttachOpen(false)
+    setAttachSearch('')
+  }
+
+  async function handleUnlink(postId: string) {
+    await fetch(`/api/initiatives/${initiativeId}/community-links/${postId}`, { method: 'DELETE' })
+    setCommunityIdeas(prev => prev.filter(i => i.post_id !== postId))
+  }
+
+  const linkedPostIds = new Set(communityIdeas.map(i => i.post_id))
+  const attachCandidates = attachPosts
+    .filter(p => !linkedPostIds.has(p.id))
+    .filter(p => {
+      const q = attachSearch.trim().toLowerCase()
+      if (!q) return true
+      return p.title.toLowerCase().includes(q) || (p.content ?? '').toLowerCase().includes(q)
+    })
 
   const links = parseLinks(initiative?.links ?? '')
   const completionLinks = parseLinks(initiative?.completion_links ?? '')
@@ -318,6 +365,118 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
             <p style={{ fontSize: '.88rem', color: 'var(--text-2)', lineHeight: 1.8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {initiative.description || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>No description provided.</span>}
             </p>
+          </div>
+
+          {/* Community Ideas section */}
+          <div className="dp-section-card">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: communityIdeas.length || attachOpen ? '.75rem' : 0 }}>
+              <div className="dp-section-label" style={{ marginBottom: 0 }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 14, height: 14 }}>
+                  <path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z" />
+                </svg>
+                Community Ideas
+                {communityIdeas.length > 0 && (
+                  <span style={{ marginLeft: '.4rem', fontSize: '.62rem', fontWeight: 700, color: 'var(--text-3)' }}>
+                    {communityIdeas.length}
+                  </span>
+                )}
+              </div>
+              <button className="btn btn-soft btn-xs" onClick={() => attachOpen ? setAttachOpen(false) : openAttach()}>
+                {attachOpen ? 'Cancel' : '+ Attach idea'}
+              </button>
+            </div>
+
+            {attachOpen && (
+              <div className="dp-attach-picker" style={{ marginBottom: communityIdeas.length ? '.85rem' : 0, border: '1px solid var(--border)', borderRadius: 10, padding: '.65rem' }}>
+                <input
+                  type="text"
+                  placeholder="Search community ideas…"
+                  value={attachSearch}
+                  onChange={e => setAttachSearch(e.target.value)}
+                  className="dp-field-input"
+                  style={{ width: '100%', marginBottom: '.5rem' }}
+                  autoFocus
+                />
+                {attachLoading ? (
+                  <p style={{ color: 'var(--text-3)', fontSize: '.78rem', padding: '.25rem' }}>Loading ideas…</p>
+                ) : attachCandidates.length === 0 ? (
+                  <p style={{ color: 'var(--text-3)', fontSize: '.78rem', padding: '.25rem' }}>
+                    {attachPosts.length === 0 ? 'No community posts yet.' : 'No matching ideas to attach.'}
+                  </p>
+                ) : (
+                  <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '.35rem' }}>
+                    {attachCandidates.map(p => (
+                      <button
+                        key={p.id}
+                        className="dp-attach-option"
+                        onClick={() => handleAttach(p.id)}
+                        disabled={attachingId === p.id}
+                        style={{ textAlign: 'left', padding: '.5rem .6rem', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-2,transparent)', cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '.15rem' }}
+                      >
+                        <span style={{ fontSize: '.8rem', fontWeight: 700, color: 'var(--text)' }}>
+                          {p.title}
+                          {p.is_resolved && <span style={{ marginLeft: '.4rem', fontSize: '.6rem', color: 'var(--text-3)', fontWeight: 600 }}>· resolved</span>}
+                        </span>
+                        {p.content && (
+                          <span style={{ fontSize: '.7rem', color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {p.content}
+                          </span>
+                        )}
+                        <span style={{ fontSize: '.62rem', color: 'var(--text-3)' }}>
+                          by {p.user_name} · {attachingId === p.id ? 'Attaching…' : 'Click to attach'}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {communityIdeas.length === 0 ? (
+              !attachOpen && (
+                <p style={{ color: 'var(--text-3)', fontSize: '.78rem', marginTop: '.4rem' }}>
+                  No community ideas absorbed into this initiative yet.
+                </p>
+              )
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '.6rem' }}>
+                {communityIdeas.map(idea => (
+                  <div key={idea.id} className="dp-idea-row" style={{ border: '1px solid var(--border)', borderLeft: '3px solid var(--blue-l)', borderRadius: 10, padding: '.7rem .8rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '.5rem' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem', marginBottom: '.35rem' }}>
+                          <div className="dp-participant-avatar" style={{ width: 24, height: 24, fontSize: '.48rem', background: PARTICIPANT_GRADS[2], flexShrink: 0 }}>
+                            {initials(idea.user_name)}
+                          </div>
+                          <span style={{ fontSize: '.72rem', fontWeight: 700, color: 'var(--text)' }}>{idea.user_name}</span>
+                          <span style={{ fontSize: '.62rem', color: 'var(--text-3)' }}>· Idea from the board</span>
+                        </div>
+                        <div style={{ fontSize: '.86rem', fontWeight: 700, color: 'var(--text)', marginBottom: '.2rem' }}>{idea.title}</div>
+                        {idea.content && (
+                          <div style={{ fontSize: '.82rem', color: 'var(--text-2)', lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{idea.content}</div>
+                        )}
+                        <div style={{ display: 'flex', gap: '.85rem', marginTop: '.45rem', fontSize: '.66rem', color: 'var(--text-3)', fontWeight: 600 }}>
+                          <span>▲ {idea.likes} upvote{idea.likes !== 1 ? 's' : ''}</span>
+                          <span>{idea.comment_count} comment{idea.comment_count !== 1 ? 's' : ''}</span>
+                          <span>posted {fmtRelative(idea.created_at)}</span>
+                          {idea.linked_by_name && <span>· attached by {idea.linked_by_name}</span>}
+                        </div>
+                      </div>
+                      <button
+                        className="icon-btn icon-btn-danger"
+                        style={{ width: 26, height: 26, borderRadius: 6, flexShrink: 0 }}
+                        onClick={() => handleUnlink(idea.post_id)}
+                        title="Detach idea"
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 12, height: 12 }}>
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Notes section */}
@@ -625,7 +784,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
               setShowEdit(false)
               fetch(`/api/initiatives/${initiativeId}`)
                 .then(r => r.json())
-                .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []) })
+                .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []); setCommunityIdeas(data.communityIdeas ?? []) })
               onRefresh()
             }}
         />
@@ -641,7 +800,7 @@ export default function DetailsPanel({ initiativeId, user, teamList, onClose, on
             setShowAnalysis(false)
             fetch(`/api/initiatives/${initiativeId}`)
               .then(r => r.json())
-              .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []) })
+              .then(data => { setInitiative(data.initiative); setNotes(data.notes ?? []); setCommunityIdeas(data.communityIdeas ?? []) })
             setMilestoneReload(n => n + 1)
             onRefresh()
           }}

@@ -126,6 +126,22 @@ export interface CommunityComment {
   created_at: string
 }
 
+export interface CommunityIdeaLink {
+  id: string
+  initiative_id: string
+  post_id: string
+  title: string
+  content: string
+  user_name: string
+  user_email: string
+  created_at: string
+  linked_at: string
+  linked_by_name: string
+  likes: number
+  comment_count: number
+  is_resolved: boolean
+}
+
 export interface InitialData {
   user: { email: string; name: string }
   canDelete: boolean

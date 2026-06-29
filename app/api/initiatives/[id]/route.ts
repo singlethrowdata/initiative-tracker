@@ -12,7 +12,7 @@ export async function GET(_req: Request, { params }: Params) {
 
   const { id } = await params
 
-  const [initiative, updates, notes] = await Promise.all([
+  const [initiative, updates, notes, communityIdeas] = await Promise.all([
     sql`SELECT * FROM initiatives WHERE id = ${id}`.then(r => r[0] ?? null),
     sql`
       SELECT u.*,
@@ -48,11 +48,23 @@ export async function GET(_req: Request, { params }: Params) {
       GROUP BY n.id
       ORDER BY n.created_at DESC
     `,
+    sql`
+      SELECT l.id, l.initiative_id, l.post_id, l.linked_by_name,
+        l.created_at AS linked_at,
+        cp.title, cp.content, cp.user_name, cp.user_email,
+        cp.created_at, cp.is_resolved,
+        (SELECT COUNT(*) FROM community_comments cc WHERE cc.post_id = cp.id)::int AS comment_count,
+        (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = cp.id)::int AS likes
+      FROM initiative_community_links l
+      JOIN community_posts cp ON cp.id = l.post_id
+      WHERE l.initiative_id = ${id}
+      ORDER BY l.created_at DESC
+    `,
   ])
 
   if (!initiative) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  return NextResponse.json({ initiative, updates, notes })
+  return NextResponse.json({ initiative, updates, notes, communityIdeas })
 }
 
 export async function PATCH(req: Request, { params }: Params) {

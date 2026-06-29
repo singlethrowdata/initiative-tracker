@@ -6,6 +6,7 @@ import { initials, fmtRelative } from '@/lib/ui'
 import MentionInput from '@/components/shared/MentionInput'
 import MentionText from '@/components/shared/MentionText'
 import CreateInitiativeModal from '@/components/modals/CreateInitiativeModal'
+import LinkInitiativeModal from '@/components/modals/LinkInitiativeModal'
 
 interface Props {
   user: { email: string; name: string }
@@ -28,6 +29,8 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
   const [submittingSet, setSubmittingSet] = useState<Set<string>>(new Set())
   const [transferredPosts, setTransferredPosts] = useState<Set<string>>(new Set())
   const [transferTarget, setTransferTarget] = useState<typeof posts[number] | null>(null)
+  const [linkTarget, setLinkTarget] = useState<typeof posts[number] | null>(null)
+  const [linkedPosts, setLinkedPosts] = useState<Set<string>>(new Set())
   const [resolvedExpanded, setResolvedExpanded] = useState(false)
 
   const load = useCallback(async () => {
@@ -184,6 +187,7 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
     const commentCount = post.community_comments?.length ?? 0
 
     const isTransferred = transferredPosts.has(post.id)
+    const isLinked = linkedPosts.has(post.id)
 
     return (
       <div key={post.id} className={`post${post.is_resolved ? ' post-resolved' : ''}`}>
@@ -239,6 +243,13 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
               disabled={isTransferred}
             >
               {isTransferred ? 'In Tracker ✓' : 'Send to Tracker'}
+            </button>
+            <button
+              className={`btn btn-xs${isLinked ? ' btn-tracker-done' : ' btn-soft'}`}
+              onClick={() => !isLinked && setLinkTarget(post)}
+              disabled={isLinked}
+            >
+              {isLinked ? 'Linked ✓' : 'Link to Initiative'}
             </button>
             {!post.is_resolved && (
               <button className="btn btn-soft btn-xs btn-resolve" onClick={() => handleResolve(post.id)}>
@@ -402,6 +413,20 @@ export default function CommunityTab({ user, canDelete, teamList }: Props) {
           onCreated={() => {
             setTransferredPosts(prev => new Set(prev).add(transferTarget.id))
             setTransferTarget(null)
+          }}
+        />
+      )}
+
+      {linkTarget && (
+        <LinkInitiativeModal
+          postId={linkTarget.id}
+          postTitle={linkTarget.title}
+          onClose={() => setLinkTarget(null)}
+          onLinked={() => {
+            setLinkedPosts(prev => new Set(prev).add(linkTarget.id))
+            // Absorbing an idea resolves it on the board
+            setPosts(prev => prev.map(p => p.id === linkTarget.id ? { ...p, is_resolved: true } : p))
+            setLinkTarget(null)
           }}
         />
       )}

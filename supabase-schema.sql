@@ -132,6 +132,17 @@ CREATE TABLE IF NOT EXISTS community_comments (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Initiative ↔ Community idea links (a community post absorbed into an initiative)
+CREATE TABLE IF NOT EXISTS initiative_community_links (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  initiative_id UUID NOT NULL REFERENCES initiatives(id) ON DELETE CASCADE,
+  post_id UUID NOT NULL REFERENCES community_posts(id) ON DELETE CASCADE,
+  linked_by TEXT DEFAULT '',
+  linked_by_name TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (initiative_id, post_id)
+);
+
 -- ═══════════ INDEXES ═══════════
 CREATE INDEX IF NOT EXISTS idx_initiatives_archived ON initiatives(is_archived);
 CREATE INDEX IF NOT EXISTS idx_initiatives_status ON initiatives(status);
@@ -144,5 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_personal_comments_note ON personal_comments(note_
 CREATE INDEX IF NOT EXISTS idx_community_posts_created ON community_posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_community_comments_post ON community_comments(post_id);
 CREATE INDEX IF NOT EXISTS idx_post_likes_post ON post_likes(post_id);
+CREATE INDEX IF NOT EXISTS idx_icl_initiative ON initiative_community_links(initiative_id);
+CREATE INDEX IF NOT EXISTS idx_icl_post ON initiative_community_links(post_id);
 CREATE INDEX IF NOT EXISTS idx_team_members_email ON team_members(email);
 CREATE INDEX IF NOT EXISTS idx_team_members_status ON team_members(status);
