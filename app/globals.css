@@ -326,6 +326,43 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .di-chev:hover{color:var(--text)}
 .di-tag-hold{display:inline-block;font-size:.58rem;padding:.05rem .4rem;border-radius:8px;background:var(--danger-bg);color:var(--danger);border:1px solid rgba(217,79,79,0.25);margin-left:.4rem}
 
+/* list row card + inline controls — these three classes were referenced by the JSX but
+   never actually defined, so every row rendered with no border/padding/hover/selected
+   state and the dropdowns/textareas fell back to bare browser defaults. */
+.lr{background:var(--bg-w);border:1px solid var(--border);border-radius:6px;padding:.55rem;cursor:pointer}
+.lr:hover{border-color:var(--border-hover)}
+.lr.sel{border-color:var(--blue-l);background:var(--blue-bg)}
+.inl{background:none;border:1px solid transparent;border-radius:4px;padding:.15rem .3rem;font-family:var(--font);font-size:.7rem;color:var(--text-2);cursor:pointer;width:100%}
+.inl:hover{border-color:var(--border-hover);background:var(--bg)}
+.inl:focus{outline:none;border-color:var(--blue-l);background:var(--bg-w)}
+.ta{width:100%;background:var(--bg-w);border:1.5px solid var(--border);border-radius:8px;padding:.5rem .65rem;font-family:var(--font);font-size:.75rem;color:var(--text);resize:vertical;line-height:1.5}
+.ta:focus{outline:none;border-color:var(--blue-l);box-shadow:0 0 0 3px rgba(41,128,185,0.08)}
+
+/* list header row + row grid (shared column template, so header and rows stay aligned) */
+.di-lh{display:grid;grid-template-columns:22px minmax(150px,1.5fr) 84px 74px 90px minmax(180px,2.2fr) 62px;gap:.6rem;padding:0 .55rem .4rem;font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:700}
+.di-lr-grid{display:grid;grid-template-columns:22px minmax(150px,1.5fr) 84px 74px 90px minmax(180px,2.2fr) 62px;gap:.6rem;align-items:center}
+@media (max-width:900px){
+  .di-lh{display:none}
+  .di-lr-grid{grid-template-columns:minmax(0,1fr) 60px}
+  .di-lr-grid>.di-col-hide{display:none}
+  .di-lr-grid>.di-col-bar{grid-column:1/-1;order:3;margin-top:.35rem}
+}
+
+/* D+I Roadmap's own flat, dense shell — deliberately NOT the shared gradient/orb chrome
+   the other tabs use. The approved mockup is a tight utilitarian dashboard; reusing
+   .tracker-wrap/.btn-grad dropped it into the rest of the app's soft consumer-social
+   look instead (heavy rounding, animated rainbow buttons, floating blurred orbs). */
+.di-wrap{background:var(--bg-w);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.di-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+.di-h1{margin:0;font-size:1.1rem;font-weight:800;letter-spacing:-.01em;color:var(--text)}
+.di-sub{margin:.2rem 0 0;font-size:.7rem;color:var(--text-3)}
+.di-tools{display:flex;gap:.45rem;align-items:center;flex-wrap:wrap}
+.di-tool-field{background:var(--bg-w);border:1px solid var(--border-hover);border-radius:6px;padding:.4rem .65rem;font-family:var(--font);font-size:.75rem;color:var(--text);min-width:150px}
+.di-tool-field:focus{outline:none;border-color:var(--blue-l)}
+.di-btn-primary{background:var(--blue);color:#fff;border:none;border-radius:6px;padding:.45rem .9rem;font-family:var(--font);font-size:.75rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.di-btn-primary:hover{background:#123f5c}
+.di-body{padding:1rem 1.25rem 1.25rem}
+
 /* two-pane shell (main + context rail) */
 .di-shell{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1rem;align-items:start}
 @media (max-width:1100px){.di-shell{grid-template-columns:1fr}}

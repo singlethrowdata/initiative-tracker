@@ -102,14 +102,26 @@ export default function DIRoadmapTab({ canDelete }: Props) {
 
   return (
     <>
-      <div className="tracker-wrap">
-        <div className="tracker-top">
-          <h3>D+I Roadmap</h3>
-          <div className="tracker-top-btns">
-            <button className="btn btn-grad btn-sm" onClick={() => setShowCreate(true)}>+ New Initiative</button>
+      <div className="di-wrap">
+        <div className="di-head">
+          <div>
+            <h1 className="di-h1">D+I Roadmap</h1>
+            <p className="di-sub">Design and Innovation · {initiatives.length} initiative{initiatives.length === 1 ? '' : 's'}</p>
+          </div>
+          <div className="di-tools">
+            <input
+              className="di-tool-field" type="search" placeholder="Search initiatives" aria-label="Search initiatives"
+              value={search} onChange={e => setSearch(e.target.value)}
+            />
+            <select className="di-tool-field" style={{ minWidth: 130 }} aria-label="Filter by owner" value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}>
+              <option value="">All owners</option>
+              {OWNER_VALUES.map(o => <option key={o}>{o}</option>)}
+            </select>
+            <button className="di-btn-primary" onClick={() => setShowCreate(true)}>+ New initiative</button>
           </div>
         </div>
 
+        <div className="di-body">
         {loading ? (
           <div className="loading"><div className="spinner" /><div>Loading…</div></div>
         ) : (
@@ -128,14 +140,6 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                 <button className="di-view-btn" onClick={() => setSortMode(m => (m === 'over' ? 'priority' : 'over'))}>
                   {sortMode === 'over' ? 'Sorted by time over estimate' : 'Sorted by priority and RICE'}
                 </button>
-              </div>
-
-              <div className="filter-bar" style={{ marginBottom: '.5rem' }}>
-                <input type="text" placeholder="Search initiatives…" value={search} onChange={e => setSearch(e.target.value)} />
-                <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}>
-                  <option value="">All owners</option>
-                  {OWNER_VALUES.map(o => <option key={o}>{o}</option>)}
-                </select>
               </div>
 
               <div className="di-filters">
@@ -157,56 +161,60 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                   <p>Try Everything, or clear the search.</p>
                 </div>
               ) : (
-                visible.map(i => {
-                  const open = openRows.has(i.id)
-                  const countdown = stageCountdown(i.history, i)
-                  const days = currentStageDays(i.history)
-                  return (
-                    <div key={i.id} className="di-row-wrap">
-                      <div
-                        className={`lr ${i.id === selectedId ? 'sel' : ''}`}
-                        style={{ display: 'grid', gridTemplateColumns: '22px minmax(150px,1.5fr) 84px 74px 90px minmax(180px,2.2fr) 62px', gap: '.6rem', alignItems: 'center', cursor: 'pointer' }}
-                        onClick={() => setSelectedId(i.id)}
-                      >
-                        <span style={{ fontSize: '.7rem', color: 'var(--text-3)', textAlign: 'right' }}>{i.queue_number ?? '—'}</span>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: '.78rem', display: 'flex', alignItems: 'center' }}>
-                            <button className="di-chev" onClick={e => { e.stopPropagation(); toggleRow(i.id) }} aria-label={open ? 'Collapse' : 'Expand'}>
-                              {open ? '▾' : '▸'}
-                            </button>
-                            {i.project_name}
-                            {i.history.find(h => !h.exited_at)?.blocker_category && <span className="di-tag-hold">Held</span>}
+                <>
+                  <div className="di-lh">
+                    <span>#</span><span>Initiative</span><span>Stage</span><span>Priority</span><span>Owner</span><span>Stage timeframe</span><span style={{ textAlign: 'right' }}>Next</span>
+                  </div>
+                  {visible.map(i => {
+                    const open = openRows.has(i.id)
+                    const countdown = stageCountdown(i.history, i)
+                    const days = currentStageDays(i.history)
+                    return (
+                      <div key={i.id} className="di-row-wrap">
+                        <div
+                          className={`lr di-lr-grid ${i.id === selectedId ? 'sel' : ''}`}
+                          onClick={() => setSelectedId(i.id)}
+                        >
+                          <span className="di-col-hide" style={{ fontSize: '.7rem', color: 'var(--text-3)', textAlign: 'right' }}>{i.queue_number ?? '—'}</span>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '.78rem', display: 'flex', alignItems: 'center' }}>
+                              <button className="di-chev" onClick={e => { e.stopPropagation(); toggleRow(i.id) }} aria-label={open ? 'Collapse' : 'Expand'}>
+                                {open ? '▾' : '▸'}
+                              </button>
+                              {i.project_name}
+                              {i.history.find(h => !h.exited_at)?.blocker_category && <span className="di-tag-hold">Held</span>}
+                            </div>
+                            <div style={{ fontSize: '.62rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
                           </div>
-                          <div style={{ fontSize: '.62rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
+                          <span className={`di-col-hide pill ${diStatusClass(i.status)}`}>{i.status}</span>
+                          <select
+                            className="inl di-col-hide" onClick={e => e.stopPropagation()}
+                            value={i.priority} onChange={async e => {
+                              await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: e.target.value }) })
+                              load()
+                            }}
+                          >
+                            {PRIORITY_VALUES.map(p => <option key={p} value={p}>{p}</option>)}
+                          </select>
+                          <select
+                            className="inl di-col-hide" onClick={e => e.stopPropagation()}
+                            value={i.owner || ''} onChange={async e => {
+                              await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner: e.target.value }) })
+                              load()
+                            }}
+                          >
+                            {OWNER_VALUES.map(o => <option key={o} value={o}>{o.split(' ')[0]}</option>)}
+                          </select>
+                          <div className="di-col-bar"><StageTimelineBar history={i.history} initiative={i} /></div>
+                          <span style={{ fontSize: '.72rem', fontWeight: 700, textAlign: 'right', color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
+                            {i.status === 'Backlog' ? '—' : countdown ? (countdown.over > 0 ? `${countdown.over}d over` : `${countdown.remaining}d left`) : days != null ? `${Math.round(days)}d` : '—'}
+                          </span>
                         </div>
-                        <span className={`pill ${diStatusClass(i.status)}`}>{i.status}</span>
-                        <select
-                          className="inl" onClick={e => e.stopPropagation()}
-                          value={i.priority} onChange={async e => {
-                            await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: e.target.value }) })
-                            load()
-                          }}
-                        >
-                          {PRIORITY_VALUES.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                        <select
-                          className="inl" onClick={e => e.stopPropagation()}
-                          value={i.owner || ''} onChange={async e => {
-                            await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner: e.target.value }) })
-                            load()
-                          }}
-                        >
-                          {OWNER_VALUES.map(o => <option key={o} value={o}>{o.split(' ')[0]}</option>)}
-                        </select>
-                        <StageTimelineBar history={i.history} initiative={i} />
-                        <span style={{ fontSize: '.72rem', fontWeight: 700, textAlign: 'right', color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
-                          {i.status === 'Backlog' ? '—' : countdown ? (countdown.over > 0 ? `${countdown.over}d over` : `${countdown.remaining}d left`) : days != null ? `${Math.round(days)}d` : '—'}
-                        </span>
+                        {open && <ExpandPanel initiative={i} />}
                       </div>
-                      {open && <ExpandPanel initiative={i} />}
-                    </div>
-                  )
-                })
+                    )
+                  })}
+                </>
               )}
             </div>
 
@@ -219,6 +227,7 @@ export default function DIRoadmapTab({ canDelete }: Props) {
             />
           </div>
         )}
+        </div>
       </div>
 
       {showCreate && (
