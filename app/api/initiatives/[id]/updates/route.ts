@@ -4,6 +4,7 @@ import { sql } from '@/lib/db'
 import { getMemberName, getTeamByName } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
 import { sendAssignedToMilestoneEmail } from '@/lib/email'
+import { mirrorWaitingOnToRoadmap } from '@/lib/di-tracker-mirror'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -71,6 +72,10 @@ export async function POST(req: Request, { params }: Params) {
     // No immediate "waiting on" email — whoever was just named already knows.
     // The weekly cron emails them only once the milestone is overdue, and
     // never when they set the waiting-on on their own milestone.
+
+    // Mirror Sync: if this initiative is a Linked Initiative to a D+I Roadmap item,
+    // this "waiting on" becomes that item's Blocker Reason (see lexicon.md "Mirror Sync").
+    await mirrorWaitingOnToRoadmap({ trackerInitiativeId: id, waitingOn: body.waiting_on })
   } else {
     await sql`UPDATE initiatives SET updated_at = ${new Date().toISOString()} WHERE id = ${id}`
   }

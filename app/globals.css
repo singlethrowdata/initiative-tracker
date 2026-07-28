@@ -192,6 +192,40 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .s-approved{background:rgba(74,124,84,0.12);color:#4A7C54;font-weight:800}.s-approved .d{background:#4A7C54}
 .s-other{background:rgba(136,136,136,0.08);color:#888}.s-other .d{background:#888}
 .pill{display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;font-weight:700;padding:.22rem .6rem;border-radius:100px;white-space:nowrap}.pill .d{width:5px;height:5px;border-radius:50%}
+
+/* D+I Roadmap — own status vocabulary, own color mapping (see diStatusClass in lib/ui.ts) */
+.di-backlog{background:rgba(136,136,136,0.1);color:#666}.di-backlog .d{background:#888}
+.di-queue{background:rgba(93,173,226,0.12);color:#2E86C1}.di-queue .d{background:#2E86C1}
+.di-design{background:rgba(155,89,182,0.12);color:#8E44AD}.di-design .d{background:#8E44AD}
+.di-build{background:rgba(41,128,185,0.12);color:#1A5276}.di-build .d{background:#1A5276}
+.di-qa{background:rgba(52,152,219,0.12);color:#21618C}.di-qa .d{background:#21618C}
+.di-approval{background:rgba(245,166,35,0.14);color:#D4920A}.di-approval .d{background:#D4920A}
+.di-deploy{background:rgba(107,143,113,0.12);color:#4A7C54}.di-deploy .d{background:#4A7C54}
+.di-done{background:rgba(107,143,113,0.12);color:#6B8F71}.di-done .d{background:#6B8F71}
+.di-blocked{background:rgba(211,47,47,0.1);color:#C0392B}.di-blocked .d{background:#C0392B}
+.di-paused{background:rgba(136,136,136,0.1);color:#888}.di-paused .d{background:#888}
+.di-other{background:rgba(136,136,136,0.08);color:#888}.di-other .d{background:#888}
+
+.di-timeline-bar{display:flex;align-items:stretch;height:10px;border-radius:5px;overflow:hidden;background:var(--bg);width:100%;min-width:80px}
+.di-timeline-bar.expanded{height:22px;border-radius:6px}
+.di-timeline-seg{flex-shrink:0;min-width:2px}
+.di-seg-backlog{background:#AAB2B8}
+.di-seg-queue{background:#5DADE2}
+.di-seg-design{background:#9B59B6}
+.di-seg-build{background:#1A5276}
+.di-seg-qa{background:#21618C}
+.di-seg-approval{background:#D4920A}
+.di-seg-deploy{background:#4A7C54}
+.di-seg-done{background:#6B8F71}
+.di-seg-blocked{background:#C0392B}
+.di-seg-paused{background:#999}
+.di-seg-other{background:#888}
+.di-timeline-legend{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.4rem;font-size:.62rem;color:var(--text-3)}
+.di-timeline-legend-item{display:inline-flex;align-items:center;gap:.3rem}
+.di-timeline-legend-item .d{width:7px;height:7px;border-radius:50%;display:inline-block}
+.di-cap-card{border:1.5px solid var(--border);border-radius:14px;padding:1rem 1.25rem;background:var(--bg-w)}
+.di-cap-card.overloaded{border-color:rgba(211,47,47,0.35);background:rgba(211,47,47,0.04)}
+.di-cap-card.high-load{border-color:rgba(245,166,35,0.35);background:rgba(245,166,35,0.05)}
 .p-high{color:#1A5276;font-weight:700}.p-med{color:#2980B9;font-weight:600}.p-low{color:#82A888;font-weight:600}
 .inline-select{background:transparent;border:1px solid transparent;border-radius:8px;padding:.2rem .3rem;font-family:var(--font);font-size:.72rem;font-weight:700;cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%238899A6' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right .2rem center;padding-right:1.1rem;transition:all .2s}
 .inline-select:hover{border-color:var(--border-hover);background-color:var(--bg)}

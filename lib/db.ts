@@ -18,6 +18,15 @@ const ALLOWED: Record<string, Set<string>> = {
   ]),
   community_posts: new Set(['title', 'content', 'is_resolved', 'updated_at']),
   personal_notes: new Set(['title', 'content', 'updated_at']),
+  di_initiatives: new Set([
+    'queue_number', 'priority', 'tier', 'type', 'project_name', 'architect', 'owner', 'status',
+    'status_note', 'date_start', 'date_completed', 'description', 'outcome', 'link',
+    'pace_id', 'accelo_id', 'rice_r', 'rice_i', 'rice_c',
+    'design_wks', 'build_wks', 'qa_wks', 'approval_wks', 'deploy_wks',
+    'tracker_initiative_id', 'updated_at',
+  ]),
+  di_status_history: new Set(['blocker_category', 'blocker_note', 'exited_at']),
+  di_config: new Set(['value']),
 }
 
 export async function sqlUpdate(

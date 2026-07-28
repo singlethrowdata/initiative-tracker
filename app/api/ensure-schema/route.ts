@@ -39,5 +39,72 @@ export async function GET() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
+
+  // D+I Roadmap
+  await sql`
+    CREATE TABLE IF NOT EXISTS di_initiatives (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      queue_number INT,
+      tier TEXT DEFAULT '3 - Explore',
+      type TEXT DEFAULT 'Other',
+      project_name TEXT NOT NULL,
+      architect TEXT DEFAULT '',
+      owner TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'Backlog',
+      status_note TEXT DEFAULT '',
+      date_start TIMESTAMPTZ,
+      date_completed TIMESTAMPTZ,
+      description TEXT DEFAULT '',
+      outcome TEXT DEFAULT '',
+      link TEXT DEFAULT '',
+      pace_id TEXT DEFAULT '',
+      accelo_id TEXT DEFAULT '',
+      rice_r NUMERIC,
+      rice_i NUMERIC,
+      rice_c NUMERIC,
+      design_wks NUMERIC DEFAULT 0,
+      build_wks NUMERIC DEFAULT 0,
+      qa_wks NUMERIC DEFAULT 0,
+      approval_wks NUMERIC DEFAULT 0,
+      deploy_wks NUMERIC DEFAULT 0,
+      tracker_initiative_id UUID UNIQUE REFERENCES initiatives(id) ON DELETE SET NULL,
+      created_by TEXT DEFAULT '',
+      created_by_name TEXT DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`
+    CREATE TABLE IF NOT EXISTS di_status_history (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      di_initiative_id UUID NOT NULL REFERENCES di_initiatives(id) ON DELETE CASCADE,
+      status TEXT NOT NULL,
+      entered_at TIMESTAMPTZ DEFAULT NOW(),
+      exited_at TIMESTAMPTZ,
+      blocker_category TEXT,
+      blocker_note TEXT,
+      set_by_email TEXT DEFAULT '',
+      set_by_name TEXT DEFAULT '',
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS idx_di_status_history_initiative ON di_status_history(di_initiative_id)`
+  await sql`CREATE INDEX IF NOT EXISTS idx_di_status_history_open ON di_status_history(di_initiative_id) WHERE exited_at IS NULL`
+  await sql`
+    CREATE TABLE IF NOT EXISTS di_config (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `
+  await sql`
+    INSERT INTO di_config (key, value) VALUES
+      ('wip_cap_per_owner', '4'),
+      ('high_load_weeks_threshold', '8'),
+      ('overload_weeks_threshold', '12'),
+      ('size_presets', '{"Small":{"design":1,"build":1,"qa":1,"approval":1,"deploy":0.5},"Medium":{"design":2,"build":3,"qa":2,"approval":1,"deploy":1},"Large":{"design":3,"build":6,"qa":3,"approval":2,"deploy":1}}')
+    ON CONFLICT (key) DO NOTHING
+  `
+  await sql`ALTER TABLE di_initiatives ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'Medium'`
+
   return NextResponse.json({ ok: true })
 }

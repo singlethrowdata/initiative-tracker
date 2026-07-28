@@ -4,6 +4,7 @@ import { sql, sqlUpdate } from '@/lib/db'
 import { isAdmin, getMemberName, getTeamByName } from '@/lib/team'
 import { processAndNotifyMentions } from '@/lib/mentions'
 import { sendAssignedToMilestoneEmail } from '@/lib/email'
+import { mirrorWaitingOnToRoadmap } from '@/lib/di-tracker-mirror'
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -40,7 +41,7 @@ export async function PATCH(req: Request, { params }: Params) {
   }
 
   const [existing] = await sql`
-    SELECT user_email, initiative_id, assigned_to FROM updates WHERE id = ${id}
+    SELECT user_email, initiative_id, assigned_to, blocked_reason FROM updates WHERE id = ${id}
   `
   const adminFlag = await isAdmin(email)
   if (!adminFlag && existing?.user_email !== email) {
@@ -52,6 +53,15 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if ('waiting_on' in body && existing?.initiative_id) {
     await syncWaitingOn(existing.initiative_id as string)
+  }
+
+  // Mirror Sync: a "waiting on" or a new block on this milestone becomes the linked
+  // D+I Roadmap item's Blocker Reason, if this initiative is a Linked Initiative.
+  if (existing?.initiative_id) {
+    const waitingOnText = body.waiting_on || (body.blocked ? (body.blocked_reason ?? existing.blocked_reason) : '')
+    if (waitingOnText) {
+      await mirrorWaitingOnToRoadmap({ trackerInitiativeId: existing.initiative_id as string, waitingOn: waitingOnText as string })
+    }
   }
 
   const authorName = await getMemberName(email)
