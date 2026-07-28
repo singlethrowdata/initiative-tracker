@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { DiInitiative, DiStatusHistoryEntry } from '@/types'
-import { fmt, diStatusClass } from '@/lib/ui'
-import { BLOCKER_CATEGORIES } from '@/lib/di-scheduling'
+import { fmt, diStatusClass, stageAgeClass } from '@/lib/ui'
+import { BLOCKER_CATEGORIES, currentStageDays } from '@/lib/di-scheduling'
 import StageTimelineBar from '@/components/tabs/di/StageTimelineBar'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
 
@@ -29,6 +29,7 @@ export default function DIDetailsPanel({ initiativeId, onClose, onRefresh }: Pro
   const [blockerCategory, setBlockerCategory] = useState('')
   const [blockerNote, setBlockerNote] = useState('')
   const [savingBlocker, setSavingBlocker] = useState(false)
+  const [config, setConfig] = useState<Record<string, string>>({})
 
   const load = () => {
     setLoading(true)
@@ -51,6 +52,7 @@ export default function DIDetailsPanel({ initiativeId, onClose, onRefresh }: Pro
 
   useEffect(load, [initiativeId])
   useEffect(() => { requestAnimationFrame(() => setOpen(true)) }, [])
+  useEffect(() => { fetch('/api/di-config').then(r => r.json()).then(setConfig) }, [])
 
   function handleClose() {
     setOpen(false)
@@ -121,7 +123,16 @@ export default function DIDetailsPanel({ initiativeId, onClose, onRefresh }: Pro
           </div>
 
           <div className="dp-notes-block">
-            <div className="dp-notes-label">Stage Timeline</div>
+            <div className="dp-notes-label" style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
+              Stage Timeline
+              {(() => {
+                const days = currentStageDays(history)
+                if (days == null) return null
+                const warnAt = Number(config.stage_warn_days ?? 5)
+                const alertAt = Number(config.stage_alert_days ?? 10)
+                return <span className={stageAgeClass(days, warnAt, alertAt)}>{Math.round(days)}d in current stage</span>
+              })()}
+            </div>
             <StageTimelineBar history={history} expanded />
           </div>
 

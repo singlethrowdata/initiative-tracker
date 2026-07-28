@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { DiInitiative, TeamMember } from '@/types'
-import { STATUS_VALUES, TIER_VALUES, OWNER_VALUES, PRIORITY_VALUES } from '@/lib/di-scheduling'
-import { fmt, diStatusClass, priorityClass } from '@/lib/ui'
+import { STATUS_VALUES, TIER_VALUES, OWNER_VALUES, PRIORITY_VALUES, currentStageDays } from '@/lib/di-scheduling'
+import { fmt, diStatusClass, priorityClass, stageAgeClass } from '@/lib/ui'
 import StageTimelineBar from '@/components/tabs/di/StageTimelineBar'
 import CapacitySummary from '@/components/tabs/di/CapacitySummary'
+import FlowMetrics from '@/components/tabs/di/FlowMetrics'
+import KpiStrip from '@/components/tabs/di/KpiStrip'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
 import DIDetailsPanel from '@/components/details/DIDetailsPanel'
@@ -20,7 +22,8 @@ interface Props {
 export default function DIRoadmapTab({ canDelete }: Props) {
   const [initiatives, setInitiatives] = useState<DiInitiative[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'list' | 'capacity'>('list')
+  const [view, setView] = useState<'list' | 'capacity' | 'flow'>('list')
+  const [config, setConfig] = useState<Record<string, string>>({})
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
   const [ownerFilter, setOwnerFilter] = useState('All')
@@ -39,6 +42,10 @@ export default function DIRoadmapTab({ canDelete }: Props) {
   }, [])
 
   useEffect(() => { load() }, [load])
+  useEffect(() => { fetch('/api/di-config').then(r => r.json()).then(setConfig) }, [])
+
+  const stageWarnDays = Number(config.stage_warn_days ?? 5)
+  const stageAlertDays = Number(config.stage_alert_days ?? 10)
 
   const filtered = initiatives.filter(i => {
     const q = search.toLowerCase()
@@ -89,11 +96,19 @@ export default function DIRoadmapTab({ canDelete }: Props) {
             >
               Capacity
             </button>
+            <button
+              className={`btn btn-sm ${view === 'flow' ? 'btn-grad' : 'btn-outline'}`}
+              onClick={() => setView('flow')}
+            >
+              Flow
+            </button>
             <button className="btn btn-grad btn-sm" onClick={() => setShowCreate(true)}>
               + Add Initiative
             </button>
           </div>
         </div>
+
+        {!loading && <KpiStrip initiatives={initiatives} stageWarnDays={stageWarnDays} />}
 
         {view === 'capacity' ? (
           loading ? (
@@ -101,6 +116,8 @@ export default function DIRoadmapTab({ canDelete }: Props) {
           ) : (
             <CapacitySummary initiatives={initiatives} />
           )
+        ) : view === 'flow' ? (
+          <FlowMetrics />
         ) : (
           <>
             <div className="filter-bar">
@@ -145,9 +162,10 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                     <th style={{ width: '8%' }}>Priority</th>
                     <th style={{ width: '9%' }}>Status</th>
                     <th style={{ width: '9%' }}>Owner</th>
-                    <th style={{ width: '20%' }}>Stage Timeline</th>
-                    <th style={{ width: '10%' }}>Deploy Target</th>
-                    <th style={{ width: '7%' }}>RICE</th>
+                    <th style={{ width: '16%' }}>Stage Timeline</th>
+                    <th style={{ width: '7%' }}>Days</th>
+                    <th style={{ width: '9%' }}>Deploy Target</th>
+                    <th style={{ width: '6%' }}>RICE</th>
                     <th style={{ width: '9%' }}>Actions</th>
                   </tr>
                 </thead>
@@ -172,6 +190,13 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                       </td>
                       <td>{i.owner || '—'}</td>
                       <td><StageTimelineBar history={i.history} /></td>
+                      <td>
+                        {(() => {
+                          const days = currentStageDays(i.history)
+                          if (days == null) return '—'
+                          return <span className={stageAgeClass(days, stageWarnDays, stageAlertDays)}>{Math.round(days)}d</span>
+                        })()}
+                      </td>
                       <td>
                         {i.deploy_target ? fmt(i.deploy_target) : '—'}
                         {i.overdue && <span style={{ color: '#C0392B', fontWeight: 700, marginLeft: 4 }}>⚠</span>}

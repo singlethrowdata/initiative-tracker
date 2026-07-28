@@ -237,3 +237,32 @@ export function isOverdue(status: string, deployTarget: Date | null, today: Date
   if (['Done', 'Paused', 'Backlog'].includes(status)) return false
   return deployTarget < midnight(today)
 }
+
+interface HistoryEntry {
+  status: string
+  entered_at: string
+  exited_at: string | null
+}
+
+/** Days spent in whichever stage is currently open (exited_at IS NULL). Null if the
+ * initiative has no history at all (shouldn't happen, but defensive). */
+export function currentStageDays(history: HistoryEntry[]): number | null {
+  const open = history.find(h => !h.exited_at)
+  if (!open) return null
+  return (Date.now() - new Date(open.entered_at).getTime()) / 86_400_000
+}
+
+/** Averages every Awaiting Approval stint (closed or currently open) across all given
+ * initiatives — the headline "how long is EVPO turnaround really taking" number. */
+export function avgApprovalDays(initiatives: { history: HistoryEntry[] }[]): number | null {
+  const durations: number[] = []
+  for (const init of initiatives) {
+    for (const h of init.history) {
+      if (h.status !== 'Awaiting Approval') continue
+      const end = h.exited_at ? new Date(h.exited_at).getTime() : Date.now()
+      durations.push((end - new Date(h.entered_at).getTime()) / 86_400_000)
+    }
+  }
+  if (!durations.length) return null
+  return durations.reduce((a, b) => a + b, 0) / durations.length
+}

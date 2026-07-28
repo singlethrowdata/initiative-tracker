@@ -101,10 +101,13 @@ export async function GET() {
       ('wip_cap_per_owner', '4'),
       ('high_load_weeks_threshold', '8'),
       ('overload_weeks_threshold', '12'),
-      ('size_presets', '{"Small":{"design":1,"build":1,"qa":1,"approval":1,"deploy":0.5},"Medium":{"design":2,"build":3,"qa":2,"approval":1,"deploy":1},"Large":{"design":3,"build":6,"qa":3,"approval":2,"deploy":1}}')
+      ('size_presets', '{"Small":{"design":1,"build":1,"qa":1,"approval":1,"deploy":0.5},"Medium":{"design":2,"build":3,"qa":2,"approval":1,"deploy":1},"Large":{"design":3,"build":6,"qa":3,"approval":2,"deploy":1}}'),
+      ('stage_warn_days', '5'),
+      ('stage_alert_days', '10')
     ON CONFLICT (key) DO NOTHING
   `
   await sql`ALTER TABLE di_initiatives ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'Medium'`
+  await sql`ALTER TABLE di_status_history ADD COLUMN IF NOT EXISTS last_aging_alert_sent TIMESTAMPTZ`
 
   return NextResponse.json({ ok: true })
 }

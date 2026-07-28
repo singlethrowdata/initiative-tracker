@@ -84,6 +84,15 @@ export function daysClass(days: number, completed: boolean): string {
   return 'days-badge days-over'
 }
 
+// How long something has sat in its CURRENT stage (not a deadline countdown like
+// daysClass above) — yellow at warnAt days, red at alertAt days. Reuses the existing
+// .days-badge color classes.
+export function stageAgeClass(days: number, warnAt: number, alertAt: number): string {
+  if (days >= alertAt) return 'days-badge days-over'
+  if (days >= warnAt) return 'days-badge days-warn'
+  return 'days-badge days-ok'
+}
+
 export function parseLinks(links: string): string[] {
   return links.split(/[\n,]/).map(l => l.trim()).filter(Boolean)
 }
