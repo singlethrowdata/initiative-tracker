@@ -23,14 +23,16 @@ export default function TimelineView({ initiatives, selectedId, onSelect }: Prop
   const withHistory = initiatives.filter(i => i.history.length > 0)
   if (!withHistory.length) return <p style={{ fontSize: '.78rem', color: 'var(--text-3)' }}>Nothing to plot yet.</p>
 
-  const starts = withHistory.map(i => new Date(i.history[0].entered_at).getTime())
-  const base = Math.min(...starts)
   const today = Date.now()
-  const deployEnds = withHistory
-    .map(i => (i.deploy_target ? new Date(i.deploy_target).getTime() : null))
-    .filter((t): t is number => t != null)
-  const rightEdge = Math.max(today, ...deployEnds, base + 14 * DAY_MS)
-  const span = Math.max(rightEdge - base, 14 * DAY_MS)
+  // Fixed, bounded window — NOT stretched to the furthest projected Deploy Target.
+  // Queue-chained targets can land months out when an owner has many items stacked up,
+  // which would squash every real segment into an invisible sliver. "todo" segments for
+  // items further out than this window just get clipped (see .di-tl-track overflow).
+  const starts = withHistory.map(i => new Date(i.history[0].entered_at).getTime())
+  const earliestStart = Math.min(...starts, today - 14 * DAY_MS)
+  const base = Math.max(earliestStart, today - 60 * DAY_MS)
+  const rightEdge = today + 60 * DAY_MS
+  const span = rightEdge - base
   const spanDays = span / DAY_MS
 
   const weekCols = Math.ceil(spanDays / 7)
@@ -56,8 +58,8 @@ export default function TimelineView({ initiatives, selectedId, onSelect }: Prop
         const segs = buildStageSegments(i.history, i)
         let offsetDays = (new Date(i.history[0].entered_at).getTime() - base) / DAY_MS
         const bars = segs.map((s, idx) => {
-          const left = (offsetDays / spanDays) * 100
-          const width = (s.days / spanDays) * 100
+          const left = Math.max(0, (offsetDays / spanDays) * 100)
+          const width = Math.max(0, (s.days / spanDays) * 100)
           offsetDays += s.days
           const wide = width > 9
           return (

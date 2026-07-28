@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { DiInitiative } from '@/types'
 import {
-  ACTIVE_PIPELINE_STATUSES, OWNER_VALUES, PRIORITY_VALUES, BLOCKER_CATEGORIES,
+  ACTIVE_PIPELINE_STATUSES, STATUS_VALUES, OWNER_VALUES, PRIORITY_VALUES, BLOCKER_CATEGORIES,
   elapsedDays, estimatedTotalDays, stageCountdown, stageEstimateDays,
 } from '@/lib/di-scheduling'
 import StageTimelineBar from '@/components/tabs/di/StageTimelineBar'
@@ -146,7 +146,17 @@ function OverviewTab({ initiative: d, countdown, elapsed, estTotal, onRefresh }:
       </div>
 
       <div className="di-field-grid" style={{ marginTop: '.8rem' }}>
-        <div className="di-field"><p className="di-field-label">Stage</p><p className="di-field-value">{d.status}</p></div>
+        <div className="di-field">
+          <p className="di-field-label">Stage</p>
+          <select className="di-est-input" style={{ width: '100%' }} defaultValue={d.status}
+            onChange={async e => {
+              const res = await fetch(`/api/di-initiatives/${d.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: e.target.value }) })
+              if (!res.ok) { const body = await res.json().catch(() => ({})); alert(body.error ?? 'Failed to change status.') }
+              onRefresh()
+            }}>
+            {STATUS_VALUES.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
         <div className="di-field">
           <p className="di-field-label">{countdown && countdown.over > 0 ? 'Over estimate' : 'Until next stage'}</p>
           <p className="di-field-value">{countdown ? (countdown.over > 0 ? `${countdown.over}d` : `${countdown.remaining}d`) : '—'}</p>

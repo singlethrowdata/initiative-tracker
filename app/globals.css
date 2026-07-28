@@ -296,7 +296,7 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .di-tl-h{display:flex;gap:.6rem;align-items:center;margin-bottom:.3rem}
 .di-tl-row{display:flex;gap:.6rem;align-items:center;margin-bottom:.4rem;cursor:pointer}
 .di-tl-name{width:150px;flex:none;font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.di-tl-track{flex:1;position:relative;height:20px;background:var(--bg-w);border:1px solid var(--border);border-radius:3px}
+.di-tl-track{flex:1;position:relative;height:20px;background:var(--bg-w);border:1px solid var(--border);border-radius:3px;overflow:hidden}
 .di-tl-week{flex:1;font-size:.58rem;color:var(--text-3)}
 .di-tl-week.now{color:var(--blue);font-weight:700}
 .di-tl-seg{position:absolute;top:0;height:18px;font-size:.58rem;line-height:18px;padding:0 .25rem;overflow:hidden;white-space:nowrap;border-radius:2px}

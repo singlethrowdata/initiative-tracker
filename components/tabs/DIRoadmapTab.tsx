@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { DiInitiative, TeamMember } from '@/types'
-import { STATUS_VALUES, OWNER_VALUES, currentStageDays, stageCountdown } from '@/lib/di-scheduling'
-import { priorityClass } from '@/lib/ui'
+import { OWNER_VALUES, PRIORITY_VALUES, currentStageDays, stageCountdown } from '@/lib/di-scheduling'
+import { diStatusClass } from '@/lib/ui'
 import StageTimelineBar from '@/components/tabs/di/StageTimelineBar'
 import StageBand from '@/components/tabs/di/StageBand'
 import CapacityStrip from '@/components/tabs/di/CapacityStrip'
@@ -165,7 +165,7 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                     <div key={i.id} className="di-row-wrap">
                       <div
                         className={`lr ${i.id === selectedId ? 'sel' : ''}`}
-                        style={{ display: 'grid', gridTemplateColumns: '22px minmax(150px,1.5fr) 70px 90px 90px minmax(180px,2.2fr) 62px', gap: '.6rem', alignItems: 'center', cursor: 'pointer' }}
+                        style={{ display: 'grid', gridTemplateColumns: '22px minmax(150px,1.5fr) 84px 74px 90px minmax(180px,2.2fr) 62px', gap: '.6rem', alignItems: 'center', cursor: 'pointer' }}
                         onClick={() => setSelectedId(i.id)}
                       >
                         <span style={{ fontSize: '.7rem', color: 'var(--text-3)', textAlign: 'right' }}>{i.queue_number ?? '—'}</span>
@@ -179,12 +179,24 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                           </div>
                           <div style={{ fontSize: '.62rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
                         </div>
-                        <span className={priorityClass(i.priority)}>{i.priority}</span>
+                        <span className={`pill ${diStatusClass(i.status)}`}>{i.status}</span>
                         <select
                           className="inl" onClick={e => e.stopPropagation()}
-                          value={i.status} onChange={e => handleStatusChange(i.id, e.target.value)}
+                          value={i.priority} onChange={async e => {
+                            await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: e.target.value }) })
+                            load()
+                          }}
                         >
-                          {STATUS_VALUES.map(s => <option key={s} value={s}>{s}</option>)}
+                          {PRIORITY_VALUES.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                        <select
+                          className="inl" onClick={e => e.stopPropagation()}
+                          value={i.owner || ''} onChange={async e => {
+                            await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner: e.target.value }) })
+                            load()
+                          }}
+                        >
+                          {OWNER_VALUES.map(o => <option key={o} value={o}>{o.split(' ')[0]}</option>)}
                         </select>
                         <StageTimelineBar history={i.history} initiative={i} />
                         <span style={{ fontSize: '.72rem', fontWeight: 700, textAlign: 'right', color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
