@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { DiInitiative, TeamMember } from '@/types'
-import { STATUS_VALUES, TIER_VALUES, OWNER_VALUES, PRIORITY_VALUES, currentStageDays } from '@/lib/di-scheduling'
-import { fmt, diStatusClass, priorityClass, stageAgeClass } from '@/lib/ui'
+import { STATUS_VALUES, OWNER_VALUES, currentStageDays, stageCountdown } from '@/lib/di-scheduling'
+import { priorityClass } from '@/lib/ui'
 import StageTimelineBar from '@/components/tabs/di/StageTimelineBar'
-import CapacitySummary from '@/components/tabs/di/CapacitySummary'
-import FlowMetrics from '@/components/tabs/di/FlowMetrics'
-import KpiStrip from '@/components/tabs/di/KpiStrip'
+import StageBand from '@/components/tabs/di/StageBand'
+import CapacityStrip from '@/components/tabs/di/CapacityStrip'
+import ExpandPanel from '@/components/tabs/di/ExpandPanel'
+import BoardView from '@/components/tabs/di/BoardView'
+import TimelineView from '@/components/tabs/di/TimelineView'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
 import DIDetailsPanel from '@/components/details/DIDetailsPanel'
@@ -19,17 +21,27 @@ interface Props {
   teamList: TeamMember[]
 }
 
+type ViewMode = 'list' | 'board' | 'timeline'
+type Segment = 'all' | 'flight' | 'approval' | 'held' | 'backlog'
+
+const SEGMENTS: { key: Segment; label: string; test: (i: DiInitiative) => boolean }[] = [
+  { key: 'all', label: 'Everything', test: () => true },
+  { key: 'flight', label: 'In Flight', test: i => ['Design', 'Build', 'QA', 'Deploy'].includes(i.status) },
+  { key: 'approval', label: 'Awaiting Approval', test: i => i.status === 'Awaiting Approval' },
+  { key: 'held', label: 'Blocked or Paused', test: i => i.status === 'Blocked' || i.status === 'Paused' || !!i.history.find(h => !h.exited_at)?.blocker_category },
+  { key: 'backlog', label: 'Backlog', test: i => i.status === 'Backlog' || i.status === 'In Queue' },
+]
+
 export default function DIRoadmapTab({ canDelete }: Props) {
   const [initiatives, setInitiatives] = useState<DiInitiative[]>([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'list' | 'capacity' | 'flow'>('list')
-  const [config, setConfig] = useState<Record<string, string>>({})
+  const [view, setView] = useState<ViewMode>('list')
+  const [segment, setSegment] = useState<Segment>('all')
+  const [sortMode, setSortMode] = useState<'over' | 'priority'>('over')
   const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('All')
-  const [ownerFilter, setOwnerFilter] = useState('All')
-  const [tierFilter, setTierFilter] = useState('All')
-  const [priorityFilter, setPriorityFilter] = useState('All')
+  const [ownerFilter, setOwnerFilter] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [openRows, setOpenRows] = useState<Set<string>>(new Set())
   const [showCreate, setShowCreate] = useState(false)
   const [editTarget, setEditTarget] = useState<DiInitiative | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<DiInitiative | null>(null)
@@ -42,20 +54,19 @@ export default function DIRoadmapTab({ canDelete }: Props) {
   }, [])
 
   useEffect(() => { load() }, [load])
-  useEffect(() => { fetch('/api/di-config').then(r => r.json()).then(setConfig) }, [])
 
-  const stageWarnDays = Number(config.stage_warn_days ?? 5)
-  const stageAlertDays = Number(config.stage_alert_days ?? 10)
-
-  const filtered = initiatives.filter(i => {
-    const q = search.toLowerCase()
-    const matchSearch = !q || i.project_name.toLowerCase().includes(q) || i.description.toLowerCase().includes(q)
-    const matchStatus = statusFilter === 'All' || i.status === statusFilter
-    const matchOwner = ownerFilter === 'All' || i.owner === ownerFilter
-    const matchTier = tierFilter === 'All' || i.tier === tierFilter
-    const matchPriority = priorityFilter === 'All' || i.priority === priorityFilter
-    return matchSearch && matchStatus && matchOwner && matchTier && matchPriority
-  })
+  const visible = initiatives
+    .filter(i => SEGMENTS.find(s => s.key === segment)!.test(i))
+    .filter(i => !search || i.project_name.toLowerCase().includes(search.toLowerCase()))
+    .filter(i => !ownerFilter || i.owner === ownerFilter)
+    .sort((a, b) => {
+      if (sortMode === 'over') {
+        const overA = stageCountdown(a.history, a)?.over ?? 0
+        const overB = stageCountdown(b.history, b)?.over ?? 0
+        if (overB !== overA) return overB - overA
+      }
+      return (b.rice_score ?? 0) - (a.rice_score ?? 0)
+    })
 
   async function handleStatusChange(id: string, status: string) {
     const res = await fetch(`/api/di-initiatives/${id}`, {
@@ -78,158 +89,125 @@ export default function DIRoadmapTab({ canDelete }: Props) {
     setDeleteTarget(null)
   }
 
+  function toggleRow(id: string) {
+    setOpenRows(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const selected = initiatives.find(i => i.id === selectedId) ?? null
+
   return (
     <>
       <div className="tracker-wrap">
         <div className="tracker-top">
           <h3>D+I Roadmap</h3>
           <div className="tracker-top-btns">
-            <button
-              className={`btn btn-sm ${view === 'list' ? 'btn-grad' : 'btn-outline'}`}
-              onClick={() => setView('list')}
-            >
-              List
-            </button>
-            <button
-              className={`btn btn-sm ${view === 'capacity' ? 'btn-grad' : 'btn-outline'}`}
-              onClick={() => setView('capacity')}
-            >
-              Capacity
-            </button>
-            <button
-              className={`btn btn-sm ${view === 'flow' ? 'btn-grad' : 'btn-outline'}`}
-              onClick={() => setView('flow')}
-            >
-              Flow
-            </button>
-            <button className="btn btn-grad btn-sm" onClick={() => setShowCreate(true)}>
-              + Add Initiative
-            </button>
+            <button className="btn btn-grad btn-sm" onClick={() => setShowCreate(true)}>+ New Initiative</button>
           </div>
         </div>
 
-        {!loading && <KpiStrip initiatives={initiatives} stageWarnDays={stageWarnDays} />}
-
-        {view === 'capacity' ? (
-          loading ? (
-            <div className="loading"><div className="spinner" /><div>Loading…</div></div>
-          ) : (
-            <CapacitySummary initiatives={initiatives} />
-          )
-        ) : view === 'flow' ? (
-          <FlowMetrics />
+        {loading ? (
+          <div className="loading"><div className="spinner" /><div>Loading…</div></div>
         ) : (
-          <>
-            <div className="filter-bar">
-              <input
-                type="text"
-                placeholder="Search D+I initiatives…"
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-              <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-                <option value="All">All Statuses</option>
-                {STATUS_VALUES.map(s => <option key={s}>{s}</option>)}
-              </select>
-              <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}>
-                <option value="All">All Owners</option>
-                {OWNER_VALUES.map(o => <option key={o}>{o}</option>)}
-              </select>
-              <select value={tierFilter} onChange={e => setTierFilter(e.target.value)}>
-                <option value="All">All Tiers</option>
-                {TIER_VALUES.map(t => <option key={t}>{t}</option>)}
-              </select>
-              <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)}>
-                <option value="All">All Priorities</option>
-                {PRIORITY_VALUES.map(p => <option key={p}>{p}</option>)}
-              </select>
-            </div>
+          <div className="di-shell">
+            <div style={{ minWidth: 0 }}>
+              <StageBand initiatives={initiatives} />
+              <CapacityStrip initiatives={initiatives} />
 
-            {loading ? (
-              <div className="loading"><div className="spinner" /><div>Loading…</div></div>
-            ) : filtered.length === 0 ? (
-              <div className="empty">
-                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
-                <h3>No D+I initiatives found</h3>
-                <p>{search ? 'Try a different search.' : 'Create one to get started.'}</p>
+              <div className="di-views">
+                {(['list', 'board', 'timeline'] as ViewMode[]).map(v => (
+                  <button key={v} className={`di-view-btn ${view === v ? 'on' : ''}`} onClick={() => setView(v)}>
+                    {v === 'list' ? 'List' : v === 'board' ? 'Board' : 'Timeline'}
+                  </button>
+                ))}
+                <span style={{ flex: 1 }} />
+                <button className="di-view-btn" onClick={() => setSortMode(m => (m === 'over' ? 'priority' : 'over'))}>
+                  {sortMode === 'over' ? 'Sorted by time over estimate' : 'Sorted by priority and RICE'}
+                </button>
               </div>
-            ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th style={{ width: '5%' }}>P#</th>
-                    <th style={{ width: '16%' }}>Project</th>
-                    <th style={{ width: '8%' }}>Priority</th>
-                    <th style={{ width: '9%' }}>Status</th>
-                    <th style={{ width: '9%' }}>Owner</th>
-                    <th style={{ width: '16%' }}>Stage Timeline</th>
-                    <th style={{ width: '7%' }}>Days</th>
-                    <th style={{ width: '9%' }}>Deploy Target</th>
-                    <th style={{ width: '6%' }}>RICE</th>
-                    <th style={{ width: '9%' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(i => (
-                    <tr key={i.id}>
-                      <td>{i.queue_number ?? '—'}</td>
-                      <td>
-                        <a className="init-name-link" style={{ cursor: 'pointer' }} onClick={() => setSelectedId(i.id)}>
-                          {i.project_name}
-                        </a>
-                      </td>
-                      <td><span className={priorityClass(i.priority)}>{i.priority}</span></td>
-                      <td>
+
+              <div className="filter-bar" style={{ marginBottom: '.5rem' }}>
+                <input type="text" placeholder="Search initiatives…" value={search} onChange={e => setSearch(e.target.value)} />
+                <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}>
+                  <option value="">All owners</option>
+                  {OWNER_VALUES.map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+
+              <div className="di-filters">
+                {SEGMENTS.map(s => (
+                  <button key={s.key} className={`di-filter-pill ${segment === s.key ? 'on' : ''}`} onClick={() => setSegment(s.key)}>
+                    {s.label} <b>{initiatives.filter(s.test).length}</b>
+                  </button>
+                ))}
+              </div>
+
+              {view === 'board' ? (
+                <BoardView initiatives={visible} selectedId={selectedId} onSelect={setSelectedId} onStatusChange={handleStatusChange} />
+              ) : view === 'timeline' ? (
+                <TimelineView initiatives={visible} selectedId={selectedId} onSelect={setSelectedId} />
+              ) : visible.length === 0 ? (
+                <div className="empty">
+                  <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" /></svg>
+                  <h3>Nothing in this segment</h3>
+                  <p>Try Everything, or clear the search.</p>
+                </div>
+              ) : (
+                visible.map(i => {
+                  const open = openRows.has(i.id)
+                  const countdown = stageCountdown(i.history, i)
+                  const days = currentStageDays(i.history)
+                  return (
+                    <div key={i.id} className="di-row-wrap">
+                      <div
+                        className={`lr ${i.id === selectedId ? 'sel' : ''}`}
+                        style={{ display: 'grid', gridTemplateColumns: '22px minmax(150px,1.5fr) 70px 90px 90px minmax(180px,2.2fr) 62px', gap: '.6rem', alignItems: 'center', cursor: 'pointer' }}
+                        onClick={() => setSelectedId(i.id)}
+                      >
+                        <span style={{ fontSize: '.7rem', color: 'var(--text-3)', textAlign: 'right' }}>{i.queue_number ?? '—'}</span>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '.78rem', display: 'flex', alignItems: 'center' }}>
+                            <button className="di-chev" onClick={e => { e.stopPropagation(); toggleRow(i.id) }} aria-label={open ? 'Collapse' : 'Expand'}>
+                              {open ? '▾' : '▸'}
+                            </button>
+                            {i.project_name}
+                            {i.history.find(h => !h.exited_at)?.blocker_category && <span className="di-tag-hold">Held</span>}
+                          </div>
+                          <div style={{ fontSize: '.62rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
+                        </div>
+                        <span className={priorityClass(i.priority)}>{i.priority}</span>
                         <select
-                          className={`inline-select pill ${diStatusClass(i.status)}`}
-                          value={i.status}
-                          onChange={e => handleStatusChange(i.id, e.target.value)}
+                          className="inl" onClick={e => e.stopPropagation()}
+                          value={i.status} onChange={e => handleStatusChange(i.id, e.target.value)}
                         >
                           {STATUS_VALUES.map(s => <option key={s} value={s}>{s}</option>)}
                         </select>
-                      </td>
-                      <td>{i.owner || '—'}</td>
-                      <td><StageTimelineBar history={i.history} /></td>
-                      <td>
-                        {(() => {
-                          const days = currentStageDays(i.history)
-                          if (days == null) return '—'
-                          return <span className={stageAgeClass(days, stageWarnDays, stageAlertDays)}>{Math.round(days)}d</span>
-                        })()}
-                      </td>
-                      <td>
-                        {i.deploy_target ? fmt(i.deploy_target) : '—'}
-                        {i.overdue && <span style={{ color: '#C0392B', fontWeight: 700, marginLeft: 4 }}>⚠</span>}
-                      </td>
-                      <td>{i.rice_score != null ? i.rice_score.toFixed(1) : '—'}</td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '.3rem' }}>
-                          <button className="icon-btn icon-btn-neutral" onClick={() => setEditTarget(i)} title="Edit">
-                            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                          </button>
-                          {canDelete && (
-                            <button className="icon-btn" onClick={() => setDeleteTarget(i)} title="Delete">
-                              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" /></svg>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </>
+                        <StageTimelineBar history={i.history} initiative={i} />
+                        <span style={{ fontSize: '.72rem', fontWeight: 700, textAlign: 'right', color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
+                          {i.status === 'Backlog' ? '—' : countdown ? (countdown.over > 0 ? `${countdown.over}d over` : `${countdown.remaining}d left`) : days != null ? `${Math.round(days)}d` : '—'}
+                        </span>
+                      </div>
+                      {open && <ExpandPanel initiative={i} />}
+                    </div>
+                  )
+                })
+              )}
+            </div>
+
+            <DIDetailsPanel
+              initiative={selected}
+              onRefresh={load}
+              onEdit={() => selected && setEditTarget(selected)}
+              canDelete={canDelete}
+              onDelete={() => selected && setDeleteTarget(selected)}
+            />
+          </div>
         )}
       </div>
-
-      {selectedId && (
-        <DIDetailsPanel
-          initiativeId={selectedId}
-          onClose={() => setSelectedId(null)}
-          onRefresh={load}
-        />
-      )}
 
       {showCreate && (
         <CreateDIInitiativeModal

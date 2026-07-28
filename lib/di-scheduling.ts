@@ -242,6 +242,102 @@ interface HistoryEntry {
   status: string
   entered_at: string
   exited_at: string | null
+  blocker_category?: string | null
+  blocker_note?: string | null
+}
+
+// The 6 stages shown on the Stage Band and as Board columns — the "active pipeline."
+// Backlog/Done/Blocked/Paused are reachable via List view or segment filters, not board
+// columns (they'd otherwise clutter the board with rarely-moved buckets).
+export const ACTIVE_PIPELINE_STATUSES = ['In Queue', 'Design', 'Build', 'QA', 'Awaiting Approval', 'Deploy']
+
+interface StageRowLike {
+  design_wks: number | string | null
+  build_wks: number | string | null
+  qa_wks: number | string | null
+  approval_wks: number | string | null
+  deploy_wks: number | string | null
+}
+
+/** Padded estimate, in DAYS, for one stage — null for stages with no stored estimate
+ * (Backlog/In Queue aren't sized). Design/Build/QA/Awaiting Approval/Deploy map directly
+ * onto the five stored phase-week fields. */
+export function stageEstimateDays(row: StageRowLike, status: string): number | null {
+  switch (status) {
+    case 'Design': return bufferedWeeks(row.design_wks) * 7
+    case 'Build': return bufferedWeeks(row.build_wks) * 7
+    case 'QA': return bufferedWeeks(row.qa_wks) * 7
+    case 'Awaiting Approval': return bufferedWeeks(row.approval_wks) * 7
+    case 'Deploy': return bufferedWeeks(row.deploy_wks) * 7
+    default: return null
+  }
+}
+
+export interface StageSegment {
+  status: string
+  days: number
+  kind: 'done' | 'now' | 'over' | 'todo' | 'hold'
+  estDays: number | null
+  overDays: number
+}
+
+/** Builds the ordered segment list for the labeled stage bar: every stage the initiative
+ * has actually passed through or is currently in (kind: done/now/over, or hold if the
+ * open stage has a Blocker Reason tagged — see lexicon.md), plus remaining active-pipeline
+ * stages ahead as a hollow "todo" preview sized by their estimate. */
+export function buildStageSegments(history: HistoryEntry[], row: StageRowLike): StageSegment[] {
+  const segments: StageSegment[] = []
+  const seen = new Set<string>()
+
+  for (const h of history) {
+    const days = ((h.exited_at ? new Date(h.exited_at).getTime() : Date.now()) - new Date(h.entered_at).getTime()) / 86_400_000
+    const est = stageEstimateDays(row, h.status)
+    const over = est != null && days > est ? days - est : 0
+    const isOpen = !h.exited_at
+    const held = isOpen && !!h.blocker_category
+    const kind: StageSegment['kind'] = held ? 'hold' : over > 0 ? 'over' : isOpen ? 'now' : 'done'
+    segments.push({ status: h.status, days, kind, estDays: est, overDays: over })
+    seen.add(h.status)
+  }
+
+  const currentIndex = ACTIVE_PIPELINE_STATUSES.indexOf(segments[segments.length - 1]?.status ?? '')
+  if (currentIndex >= 0) {
+    for (let i = currentIndex + 1; i < ACTIVE_PIPELINE_STATUSES.length; i++) {
+      const status = ACTIVE_PIPELINE_STATUSES[i]
+      if (seen.has(status)) continue
+      const est = stageEstimateDays(row, status)
+      segments.push({ status, days: est ?? 0, kind: 'todo', estDays: est, overDays: 0 })
+    }
+  }
+
+  return segments
+}
+
+/** Total days elapsed across every stage the initiative has ever been in. */
+export function elapsedDays(history: HistoryEntry[]): number {
+  return history.reduce((sum, h) => {
+    const end = h.exited_at ? new Date(h.exited_at).getTime() : Date.now()
+    return sum + (end - new Date(h.entered_at).getTime()) / 86_400_000
+  }, 0)
+}
+
+/** Sum of every stage's padded estimate — the "how big is this, total" number. */
+export function estimatedTotalDays(row: StageRowLike): number {
+  return ACTIVE_PIPELINE_STATUSES.reduce((sum, s) => sum + (stageEstimateDays(row, s) ?? 0), 0)
+}
+
+/** The countdown metric: for the CURRENTLY open stage, how many days remain until it's
+ * expected to move on (positive `remaining`), or how many days past that estimate it
+ * already is (positive `over`). Null if the current stage has no stored estimate
+ * (Backlog/In Queue). */
+export function stageCountdown(history: HistoryEntry[], row: StageRowLike): { remaining: number; over: number } | null {
+  const open = history.find(h => !h.exited_at)
+  if (!open) return null
+  const est = stageEstimateDays(row, open.status)
+  if (est == null) return null
+  const actual = currentStageDays(history) ?? 0
+  const diff = est - actual
+  return diff >= 0 ? { remaining: Math.round(diff), over: 0 } : { remaining: 0, over: Math.round(-diff) }
 }
 
 /** Days spent in whichever stage is currently open (exited_at IS NULL). Null if the

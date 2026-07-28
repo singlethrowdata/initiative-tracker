@@ -108,6 +108,17 @@ export async function GET() {
   `
   await sql`ALTER TABLE di_initiatives ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'Medium'`
   await sql`ALTER TABLE di_status_history ADD COLUMN IF NOT EXISTS last_aging_alert_sent TIMESTAMPTZ`
+  await sql`
+    CREATE TABLE IF NOT EXISTS di_updates (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      di_initiative_id UUID NOT NULL REFERENCES di_initiatives(id) ON DELETE CASCADE,
+      user_email TEXT DEFAULT '',
+      user_name TEXT DEFAULT '',
+      content TEXT NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `
+  await sql`CREATE INDEX IF NOT EXISTS idx_di_updates_initiative ON di_updates(di_initiative_id)`
 
   return NextResponse.json({ ok: true })
 }
