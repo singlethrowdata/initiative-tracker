@@ -102,26 +102,14 @@ export default function DIRoadmapTab({ canDelete }: Props) {
 
   return (
     <>
-      <div className="di-wrap">
-        <div className="di-head">
-          <div>
-            <h1 className="di-h1">D+I Roadmap</h1>
-            <p className="di-sub">Design and Innovation · {initiatives.length} initiative{initiatives.length === 1 ? '' : 's'}</p>
-          </div>
-          <div className="di-tools">
-            <input
-              className="di-tool-field" type="search" placeholder="Search initiatives" aria-label="Search initiatives"
-              value={search} onChange={e => setSearch(e.target.value)}
-            />
-            <select className="di-tool-field" style={{ minWidth: 130 }} aria-label="Filter by owner" value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}>
-              <option value="">All owners</option>
-              {OWNER_VALUES.map(o => <option key={o}>{o}</option>)}
-            </select>
-            <button className="di-btn-primary" onClick={() => setShowCreate(true)}>+ New initiative</button>
+      <div className="tracker-wrap">
+        <div className="tracker-top">
+          <h3>D+I Roadmap <span style={{ fontWeight: 400, fontSize: '.72rem', color: 'var(--text-3)' }}>· {initiatives.length} initiative{initiatives.length === 1 ? '' : 's'}</span></h3>
+          <div className="tracker-top-btns">
+            <button className="btn btn-grad btn-sm" onClick={() => setShowCreate(true)}>+ New Initiative</button>
           </div>
         </div>
 
-        <div className="di-body">
         {loading ? (
           <div className="loading"><div className="spinner" /><div>Loading…</div></div>
         ) : (
@@ -140,6 +128,14 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                 <button className="di-view-btn" onClick={() => setSortMode(m => (m === 'over' ? 'priority' : 'over'))}>
                   {sortMode === 'over' ? 'Sorted by time over estimate' : 'Sorted by priority and RICE'}
                 </button>
+              </div>
+
+              <div className="filter-bar" style={{ marginBottom: '.5rem' }}>
+                <input type="text" placeholder="Search initiatives…" value={search} onChange={e => setSearch(e.target.value)} />
+                <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}>
+                  <option value="">All owners</option>
+                  {OWNER_VALUES.map(o => <option key={o}>{o}</option>)}
+                </select>
               </div>
 
               <div className="di-filters">
@@ -175,16 +171,16 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                           className={`lr di-lr-grid ${i.id === selectedId ? 'sel' : ''}`}
                           onClick={() => setSelectedId(i.id)}
                         >
-                          <span className="di-col-hide" style={{ fontSize: '.7rem', color: 'var(--text-3)', textAlign: 'right' }}>{i.queue_number ?? '—'}</span>
+                          <span className="di-col-hide" style={{ fontSize: '.78rem', color: 'var(--text-3)', textAlign: 'right' }}>{i.queue_number ?? '—'}</span>
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: '.78rem', display: 'flex', alignItems: 'center' }}>
+                            <div style={{ fontWeight: 700, fontSize: '.85rem', display: 'flex', alignItems: 'center' }}>
                               <button className="di-chev" onClick={e => { e.stopPropagation(); toggleRow(i.id) }} aria-label={open ? 'Collapse' : 'Expand'}>
                                 {open ? '▾' : '▸'}
                               </button>
                               {i.project_name}
                               {i.history.find(h => !h.exited_at)?.blocker_category && <span className="di-tag-hold">Held</span>}
                             </div>
-                            <div style={{ fontSize: '.62rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
+                            <div style={{ fontSize: '.7rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
                           </div>
                           <span className={`di-col-hide pill ${diStatusClass(i.status)}`}>{i.status}</span>
                           <select
@@ -206,7 +202,7 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                             {OWNER_VALUES.map(o => <option key={o} value={o}>{o.split(' ')[0]}</option>)}
                           </select>
                           <div className="di-col-bar"><StageTimelineBar history={i.history} initiative={i} /></div>
-                          <span style={{ fontSize: '.72rem', fontWeight: 700, textAlign: 'right', color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
+                          <span style={{ fontSize: '.8rem', fontWeight: 700, textAlign: 'right', color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
                             {i.status === 'Backlog' ? '—' : countdown ? (countdown.over > 0 ? `${countdown.over}d over` : `${countdown.remaining}d left`) : days != null ? `${Math.round(days)}d` : '—'}
                           </span>
                         </div>
@@ -227,7 +223,6 @@ export default function DIRoadmapTab({ canDelete }: Props) {
             />
           </div>
         )}
-        </div>
       </div>
 
       {showCreate && (
