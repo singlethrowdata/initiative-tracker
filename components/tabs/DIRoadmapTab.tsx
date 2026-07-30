@@ -158,9 +158,6 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                 </div>
               ) : (
                 <>
-                  <div className="di-lh">
-                    <span>#</span><span>Initiative</span><span>Stage</span><span>Priority</span><span>Owner</span><span>Stage timeframe</span><span style={{ textAlign: 'right' }}>Next</span>
-                  </div>
                   {visible.map(i => {
                     const open = openRows.has(i.id)
                     const countdown = stageCountdown(i.history, i)
@@ -168,43 +165,47 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                     return (
                       <div key={i.id} className="di-row-wrap">
                         <div
-                          className={`lr di-lr-grid ${i.id === selectedId ? 'sel' : ''}`}
+                          className={`lr ${i.id === selectedId ? 'sel' : ''}`}
                           onClick={() => setSelectedId(i.id)}
                         >
-                          <span className="di-col-hide" style={{ fontSize: '.78rem', color: 'var(--text-3)', textAlign: 'right' }}>{i.queue_number ?? '—'}</span>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: '.85rem', display: 'flex', alignItems: 'center' }}>
-                              <button className="di-chev" onClick={e => { e.stopPropagation(); toggleRow(i.id) }} aria-label={open ? 'Collapse' : 'Expand'}>
-                                {open ? '▾' : '▸'}
-                              </button>
-                              {i.project_name}
-                              {i.history.find(h => !h.exited_at)?.blocker_category && <span className="di-tag-hold">Held</span>}
+                          <div className="di-row-top">
+                            <span style={{ fontSize: '.78rem', color: 'var(--text-3)' }}>{i.queue_number ?? '—'}</span>
+                            <div className="di-row-title">
+                              <div style={{ fontWeight: 700, fontSize: '.85rem', display: 'flex', alignItems: 'center' }}>
+                                <button className="di-chev" onClick={e => { e.stopPropagation(); toggleRow(i.id) }} aria-label={open ? 'Collapse' : 'Expand'}>
+                                  {open ? '▾' : '▸'}
+                                </button>
+                                {i.project_name}
+                                {i.history.find(h => !h.exited_at)?.blocker_category && <span className="di-tag-hold">Held</span>}
+                              </div>
+                              <div style={{ fontSize: '.7rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
                             </div>
-                            <div style={{ fontSize: '.7rem', color: 'var(--text-3)' }}>{i.tier} · {i.type}</div>
+                            <span className={`pill ${diStatusClass(i.status)}`}>{i.status}</span>
+                            <select
+                              className="inl" onClick={e => e.stopPropagation()}
+                              value={i.priority} onChange={async e => {
+                                await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: e.target.value }) })
+                                load()
+                              }}
+                            >
+                              {PRIORITY_VALUES.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                            <select
+                              className="inl" onClick={e => e.stopPropagation()}
+                              value={i.owner || ''} onChange={async e => {
+                                await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner: e.target.value }) })
+                                load()
+                              }}
+                            >
+                              {OWNER_VALUES.map(o => <option key={o} value={o}>{o.split(' ')[0]}</option>)}
+                            </select>
+                            <span className="di-row-next" style={{ color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
+                              {i.status === 'Backlog' ? '—' : countdown ? (countdown.over > 0 ? `${countdown.over}d over` : `${countdown.remaining}d left`) : days != null ? `${Math.round(days)}d` : '—'}
+                            </span>
                           </div>
-                          <span className={`di-col-hide pill ${diStatusClass(i.status)}`}>{i.status}</span>
-                          <select
-                            className="inl di-col-hide" onClick={e => e.stopPropagation()}
-                            value={i.priority} onChange={async e => {
-                              await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ priority: e.target.value }) })
-                              load()
-                            }}
-                          >
-                            {PRIORITY_VALUES.map(p => <option key={p} value={p}>{p}</option>)}
-                          </select>
-                          <select
-                            className="inl di-col-hide" onClick={e => e.stopPropagation()}
-                            value={i.owner || ''} onChange={async e => {
-                              await fetch(`/api/di-initiatives/${i.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ owner: e.target.value }) })
-                              load()
-                            }}
-                          >
-                            {OWNER_VALUES.map(o => <option key={o} value={o}>{o.split(' ')[0]}</option>)}
-                          </select>
-                          <div className="di-col-bar"><StageTimelineBar history={i.history} initiative={i} /></div>
-                          <span style={{ fontSize: '.8rem', fontWeight: 700, textAlign: 'right', color: countdown && countdown.over > 0 ? 'var(--blue)' : 'var(--green)' }}>
-                            {i.status === 'Backlog' ? '—' : countdown ? (countdown.over > 0 ? `${countdown.over}d over` : `${countdown.remaining}d left`) : days != null ? `${Math.round(days)}d` : '—'}
-                          </span>
+                          <div className="di-row-bar">
+                            <StageTimelineBar history={i.history} initiative={i} big />
+                          </div>
                         </div>
                         {open && <ExpandPanel initiative={i} />}
                       </div>

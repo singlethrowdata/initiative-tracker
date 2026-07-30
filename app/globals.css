@@ -331,23 +331,25 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
    state and the dropdowns/textareas fell back to bare browser defaults. Sized and
    rounded to match the rest of the app's cards (.di-card, .post, etc.), not the
    mockup's literal flat/dense scale — same skeleton, normal readable proportions. */
-.lr{background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.7rem .75rem;cursor:pointer}
+.lr{background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .85rem;cursor:pointer}
 .lr:hover{border-color:var(--border-hover)}
 .lr.sel{border-color:var(--blue-l);background:var(--blue-bg)}
-.inl{background:none;border:1px solid transparent;border-radius:6px;padding:.3rem .4rem;font-family:var(--font);font-size:.78rem;color:var(--text-2);cursor:pointer;width:100%}
+.inl{background:none;border:1px solid transparent;border-radius:6px;padding:.3rem .4rem;font-family:var(--font);font-size:.78rem;color:var(--text-2);cursor:pointer}
 .inl:hover{border-color:var(--border-hover);background:var(--bg)}
 .inl:focus{outline:none;border-color:var(--blue-l);background:var(--bg-w)}
 .ta{width:100%;background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.6rem .8rem;font-family:var(--font);font-size:.82rem;color:var(--text);resize:vertical;line-height:1.6}
 .ta:focus{outline:none;border-color:var(--blue-l);box-shadow:0 0 0 3px rgba(41,128,185,0.08)}
 
-/* list header row + row grid (shared column template, so header and rows stay aligned) */
-.di-lh{display:grid;grid-template-columns:22px minmax(150px,1.5fr) 84px 74px 90px minmax(180px,2.2fr) 62px;gap:.7rem;padding:0 .75rem .5rem;font-size:.68rem;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);font-weight:700}
-.di-lr-grid{display:grid;grid-template-columns:22px minmax(150px,1.5fr) 84px 74px 90px minmax(180px,2.2fr) 62px;gap:.7rem;align-items:center}
-@media (max-width:900px){
-  .di-lh{display:none}
-  .di-lr-grid{grid-template-columns:minmax(0,1fr) 60px}
-  .di-lr-grid>.di-col-hide{display:none}
-  .di-lr-grid>.di-col-bar{grid-column:1/-1;order:3;margin-top:.4rem}
+/* list row — a flexible top line (name, stage, priority, owner, countdown) that wraps
+   instead of overlapping when it runs out of room, with the full stage timeline given
+   its own line underneath instead of being squeezed into a narrow shared column. */
+.di-row-top{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.di-row-title{flex:1 1 220px;min-width:0}
+.di-row-next{margin-left:auto;font-size:.8rem;font-weight:700;white-space:nowrap}
+.di-row-bar{margin-top:.6rem}
+
+@media (max-width:640px){
+  .di-row-next{margin-left:0}
 }
 
 /* two-pane shell (main + context rail) */
