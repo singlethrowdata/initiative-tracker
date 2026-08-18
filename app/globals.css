@@ -206,59 +206,30 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .di-paused{background:rgba(136,136,136,0.1);color:#888}.di-paused .d{background:#888}
 .di-other{background:rgba(136,136,136,0.08);color:#888}.di-other .d{background:#888}
 
-.di-timeline-bar{display:flex;align-items:stretch;height:10px;border-radius:5px;overflow:hidden;background:var(--bg);width:100%;min-width:80px}
-.di-timeline-bar.expanded{height:22px;border-radius:6px}
-.di-timeline-seg{flex-shrink:0;min-width:2px}
-.di-seg-backlog{background:#AAB2B8}
-.di-seg-queue{background:#5DADE2}
-.di-seg-design{background:#9B59B6}
-.di-seg-build{background:#1A5276}
-.di-seg-qa{background:#21618C}
-.di-seg-approval{background:#D4920A}
-.di-seg-deploy{background:#4A7C54}
-.di-seg-done{background:#6B8F71}
-.di-seg-blocked{background:#C0392B}
-.di-seg-paused{background:#999}
-.di-seg-other{background:#888}
-.di-timeline-legend{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.4rem;font-size:.62rem;color:var(--text-3)}
-.di-timeline-legend-item{display:inline-flex;align-items:center;gap:.3rem}
-.di-timeline-legend-item .d{width:7px;height:7px;border-radius:50%;display:inline-block}
-.di-cap-card{border:1.5px solid var(--border);border-radius:14px;padding:1rem 1.25rem;background:var(--bg-w)}
-.di-cap-card.overloaded{border-color:rgba(211,47,47,0.35);background:rgba(211,47,47,0.04)}
-.di-cap-card.high-load{border-color:rgba(245,166,35,0.35);background:rgba(245,166,35,0.05)}
+/* stage board (kanban) — the primary working view. Column header carries the "where's
+   the pileup" signal directly (count + median days in stage) instead of a separate KPI
+   row, so there's one thing to read, not two. Horizontal scroll instead of squeezing
+   columns into a 2-3 col grid on narrower screens — a squished 7-column kanban was
+   worse than a scrollable one. */
+.di-board{display:flex;gap:.6rem;overflow-x:auto;padding-bottom:.4rem}
+.di-board-col{min-height:60px;flex:1 1 170px;min-width:170px}
+.di-board-col.drag-over{background:var(--blue-bg);border-radius:10px}
+.di-board-col-head{display:flex;align-items:baseline;justify-content:space-between;gap:.3rem;padding:0 .1rem .4rem;border-bottom:2px solid var(--border);margin-bottom:.5rem}
+.di-board-col-name{font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--text-2)}
+.di-board-col-stats{font-size:.62rem;color:var(--text-3);white-space:nowrap}
+.di-card{background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.6rem;margin-bottom:.45rem;cursor:grab}
+.di-card:hover{border-color:var(--border-hover)}
+.di-card.sel{border-color:var(--blue-l);background:var(--blue-bg)}
+.di-card.dragging{opacity:.4}
+.di-card-title{font-size:.75rem;font-weight:700;margin:0 0 .4rem;line-height:1.3;color:var(--text);display:flex;align-items:center;flex-wrap:wrap}
+.di-gauge{height:3px;border-radius:2px;background:var(--border);margin-bottom:.35rem}
+.di-gauge>i{display:block;height:3px;border-radius:2px;background:var(--blue-l)}
+.di-gauge>i.over{background:var(--blue)}
+.di-gauge>i.ok{background:var(--green)}
+.di-card-foot{display:flex;justify-content:space-between;align-items:center;font-size:.64rem;color:var(--text-3)}
+.di-board-empty{border:1px dashed var(--border-hover);border-radius:8px;padding:.8rem .5rem;text-align:center;font-size:.64rem;color:var(--text-3)}
 
-/* ================= D+I dashboard rebuild (mockup port) ================= */
-
-/* stage band */
-.di-band{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:.5rem}
-.di-band-cell{background:var(--bg-w);padding:.55rem .7rem}
-.di-band-label{font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:0 0 .2rem}
-.di-band-value{font-size:1.05rem;font-weight:800;margin:0;letter-spacing:-.01em;color:var(--text)}
-.di-band-note{font-size:.62rem;color:var(--text-3);margin:.1rem 0 0}
-@media (max-width:760px){.di-band{grid-template-columns:repeat(3,minmax(0,1fr))}}
-
-/* capacity strip */
-.di-capstrip{display:flex;flex-wrap:wrap;gap:.9rem;align-items:center;background:var(--bg-w);border:1px solid var(--border);border-radius:10px;padding:.55rem .7rem;margin-bottom:1rem}
-.di-capstrip-label{font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:700}
-.di-capstrip-owner{display:flex;align-items:center;gap:.45rem;font-size:.72rem}
-.di-slots{display:flex;gap:2px}
-.di-slot{width:14px;height:7px;border-radius:1px;background:var(--border)}
-.di-slot.filled{background:var(--blue-l)}
-.di-slot.at-cap{background:var(--blue)}
-
-/* view tabs + filter pills */
-.di-views{display:flex;gap:.25rem;margin-bottom:.6rem;border-bottom:1px solid var(--border)}
-.di-view-btn{background:none;border:none;border-bottom:2px solid transparent;padding:.45rem .8rem;cursor:pointer;color:var(--text-2);font-size:.78rem;margin-bottom:-1px;font-family:var(--font)}
-.di-view-btn:hover{color:var(--text)}
-.di-view-btn.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
-.di-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.75rem}
-.di-filter-pill{background:var(--bg-w);border:1px solid var(--border);border-radius:14px;padding:.28rem .7rem;font-size:.68rem;cursor:pointer;color:var(--text-2);display:flex;align-items:center;gap:.35rem;font-family:var(--font)}
-.di-filter-pill:hover{border-color:var(--border-hover);color:var(--text)}
-.di-filter-pill.on{background:var(--blue-bg);border-color:var(--blue-l);color:var(--blue);font-weight:700}
-.di-filter-pill b{font-weight:700;color:var(--text-3);font-size:.64rem}
-.di-filter-pill.on b{color:var(--blue)}
-
-/* labeled stage bar (Overview + list rows) */
+/* labeled stage bar (detail panel overview) */
 .di-bar{display:flex;height:20px;border-radius:4px;overflow:hidden;background:var(--bg)}
 .di-bar.lg{height:32px}
 .di-bar-seg{font-size:.6rem;line-height:20px;padding:0 .3rem;overflow:hidden;white-space:nowrap;font-variant-numeric:tabular-nums;flex-shrink:0}
@@ -271,95 +242,63 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .di-bar-axis{display:flex;font-size:.58rem;color:var(--text-3);margin-top:.15rem}
 .di-bar-axis span{overflow:hidden;white-space:nowrap;padding-right:.2rem}
 
-/* board (kanban) */
-.di-board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.6rem}
-@media (max-width:1100px){.di-board{grid-template-columns:repeat(3,minmax(0,1fr))}}
-@media (max-width:640px){.di-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.di-board-col{min-height:60px}
-.di-board-col.drag-over{background:var(--blue-bg);border-radius:10px}
-.di-board-col-head{display:flex;align-items:baseline;justify-content:space-between;padding:0 .1rem .4rem}
-.di-board-col-name{font-size:.62rem;letter-spacing:.05em;text-transform:uppercase;font-weight:700;color:var(--text-2)}
-.di-board-col-count{font-size:.64rem;color:var(--text-3)}
-.di-card{background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.6rem;margin-bottom:.45rem;cursor:grab}
-.di-card:hover{border-color:var(--border-hover)}
-.di-card.sel{border-color:var(--blue-l);background:var(--blue-bg)}
-.di-card.dragging{opacity:.4}
-.di-card-title{font-size:.75rem;font-weight:700;margin:0 0 .4rem;line-height:1.3;color:var(--text)}
-.di-gauge{height:3px;border-radius:2px;background:var(--border);margin-bottom:.35rem}
-.di-gauge>i{display:block;height:3px;border-radius:2px;background:var(--blue-l)}
-.di-gauge>i.over{background:var(--blue)}
-.di-gauge>i.ok{background:var(--green)}
-.di-card-foot{display:flex;justify-content:space-between;align-items:center;font-size:.64rem;color:var(--text-3)}
-.di-board-empty{border:1px dashed var(--border-hover);border-radius:8px;padding:.8rem .5rem;text-align:center;font-size:.64rem;color:var(--text-3)}
+/* flat list (Blocked/Paused and Done buckets) */
+.di-flat-list{display:flex;flex-direction:column;gap:.4rem}
+.di-flat-row{display:flex;align-items:center;gap:.6rem;background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.6rem .8rem;cursor:pointer;flex-wrap:wrap}
+.di-flat-row:hover{border-color:var(--border-hover)}
+.di-flat-row.sel{border-color:var(--blue-l);background:var(--blue-bg)}
+.di-flat-name{font-weight:700;font-size:.8rem;color:var(--text)}
+.di-flat-owner{font-size:.68rem;color:var(--text-3)}
+.di-flat-reason{flex:1 1 200px;font-size:.7rem;color:var(--text-2);min-width:0}
+.di-flat-days{margin-left:auto;font-size:.72rem;font-weight:700;color:var(--text-3);white-space:nowrap}
+.di-flat-empty{border:1px dashed var(--border-hover);border-radius:10px;padding:1.5rem;text-align:center;font-size:.75rem;color:var(--text-3)}
 
-/* timeline (gantt) */
-.di-tl-h{display:flex;gap:.6rem;align-items:center;margin-bottom:.3rem}
-.di-tl-row{display:flex;gap:.6rem;align-items:center;margin-bottom:.4rem;cursor:pointer}
-.di-tl-name{width:150px;flex:none;font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text)}
-.di-tl-track{flex:1;position:relative;height:20px;background:var(--bg-w);border:1px solid var(--border);border-radius:3px;overflow:hidden}
-.di-tl-week{flex:1;font-size:.58rem;color:var(--text-3)}
-.di-tl-week.now{color:var(--blue);font-weight:700}
-.di-tl-seg{position:absolute;top:0;height:18px;font-size:.58rem;line-height:18px;padding:0 .25rem;overflow:hidden;white-space:nowrap;border-radius:2px}
-.di-tl-now{position:absolute;top:-3px;bottom:-3px;width:1px;background:var(--blue);z-index:2}
+/* insight bar — the whole "how backed up are we" summary in one scannable row,
+   replacing the old separate Stage Band + Capacity Strip. */
+.di-insight{display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;background:var(--bg-w);border:1px solid var(--border);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:1rem}
+.di-insight-stats{display:flex;flex-wrap:wrap;gap:1.5rem}
+.di-stat{min-width:80px}
+.di-stat-value{font-size:1.35rem;font-weight:800;margin:0;letter-spacing:-.02em;color:var(--text)}
+.di-stat.danger .di-stat-value{color:var(--danger)}
+.di-stat-label{font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:.1rem 0 0}
+.di-stat-sub{font-size:.62rem;color:var(--text-3);margin:.1rem 0 0}
+.di-insight-owners{display:flex;flex-wrap:wrap;gap:.5rem;margin-left:auto}
+.di-owner-chip{font-size:.68rem;color:var(--text-2);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:.3rem .6rem}
+.di-owner-chip b{color:var(--text)}
+.di-owner-chip.at-cap{border-color:rgba(211,47,47,0.35);background:rgba(211,47,47,0.05);color:var(--danger)}
+.di-owner-chip.at-cap b{color:var(--danger)}
 
-/* context rail sub-tabs */
+/* toolbar bucket tabs — segmented control appended to the standard .filter-bar row */
+.di-bucket-tabs{display:flex;background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:2px;gap:2px}
+.di-bucket-tab{background:none;border:none;border-radius:8px;padding:.4rem .7rem;cursor:pointer;color:var(--text-2);font-size:.75rem;font-family:var(--font);display:flex;align-items:center;gap:.35rem;white-space:nowrap}
+.di-bucket-tab:hover{color:var(--text)}
+.di-bucket-tab.on{background:var(--blue-bg);color:var(--blue);font-weight:700}
+.di-bucket-tab b{font-weight:700;color:var(--text-3);font-size:.68rem}
+.di-bucket-tab.on b{color:var(--blue)}
+.di-bucket-tab.danger:not(.on) b{color:var(--danger)}
+
+/* padded content area below tracker-top/filter-bar — those two have their own padding,
+   everything else (insight bar, board, flat list) needs its own consistent margin
+   instead of butting against the card edge. */
+.di-body{padding:1.25rem 1.5rem}
+
+/* detail panel sub-tabs (Overview/Stages/Updates) */
 .di-rtabs{display:flex;gap:.2rem;margin:0 0 .8rem;border-bottom:1px solid var(--border)}
 .di-rtab{background:none;border:none;border-bottom:2px solid transparent;padding:.35rem .6rem;cursor:pointer;color:var(--text-2);font-size:.72rem;margin-bottom:-1px;font-family:var(--font)}
 .di-rtab:hover{color:var(--text)}
 .di-rtab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:700}
 
-/* expand panel (list row detail) */
-.di-exp{background:var(--bg-w);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;padding:.75rem .8rem .8rem}
-.di-exp-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem;margin-bottom:.7rem}
-@media (max-width:760px){.di-exp-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
-.di-exp-stat{background:var(--bg);border-radius:6px;padding:.4rem .45rem}
-.di-exp-label{font-size:.56rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);font-weight:700}
-.di-exp-value{font-size:.72rem;font-weight:700;font-variant-numeric:tabular-nums;margin-top:.1rem;color:var(--text)}
-.di-exp-est{font-size:.6rem;color:var(--text-3);font-variant-numeric:tabular-nums}
 .di-exp-heading{font-size:.58rem;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:0 0 .4rem}
 .di-hold-banner{background:var(--danger-bg);border-left:3px solid var(--danger);border-radius:0 6px 6px 0;padding:.4rem .55rem;margin-bottom:.7rem;font-size:.68rem;color:var(--text-2)}
 .di-mini-feed{list-style:none;margin:0;padding:0;font-size:.68rem}
 .di-mini-feed li{padding:.25rem 0;display:flex;gap:.5rem}
 .di-mini-feed .d{color:var(--text-3);white-space:nowrap;font-size:.62rem;padding-top:.05rem}
-.di-row-wrap{margin-bottom:.4rem}
-.di-chev{background:none;border:none;padding:0 .25rem 0 0;cursor:pointer;color:var(--text-3);font-size:.6rem;line-height:1}
-.di-chev:hover{color:var(--text)}
 .di-tag-hold{display:inline-block;font-size:.58rem;padding:.05rem .4rem;border-radius:8px;background:var(--danger-bg);color:var(--danger);border:1px solid rgba(217,79,79,0.25);margin-left:.4rem}
 
-/* list row card + inline controls — these three classes were referenced by the JSX but
-   never actually defined, so every row rendered with no border/padding/hover/selected
-   state and the dropdowns/textareas fell back to bare browser defaults. Sized and
-   rounded to match the rest of the app's cards (.di-card, .post, etc.), not the
-   mockup's literal flat/dense scale — same skeleton, normal readable proportions. */
-.lr{background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.75rem .85rem;cursor:pointer}
-.lr:hover{border-color:var(--border-hover)}
-.lr.sel{border-color:var(--blue-l);background:var(--blue-bg)}
-.inl{background:none;border:1px solid transparent;border-radius:6px;padding:.3rem .4rem;font-family:var(--font);font-size:.78rem;color:var(--text-2);cursor:pointer}
-.inl:hover{border-color:var(--border-hover);background:var(--bg)}
-.inl:focus{outline:none;border-color:var(--blue-l);background:var(--bg-w)}
 .ta{width:100%;background:var(--bg-w);border:1.5px solid var(--border);border-radius:10px;padding:.6rem .8rem;font-family:var(--font);font-size:.82rem;color:var(--text);resize:vertical;line-height:1.6}
 .ta:focus{outline:none;border-color:var(--blue-l);box-shadow:0 0 0 3px rgba(41,128,185,0.08)}
 
-/* list row — a flexible top line (name, stage, priority, owner, countdown) that wraps
-   instead of overlapping when it runs out of room, with the full stage timeline given
-   its own line underneath instead of being squeezed into a narrow shared column. */
-.di-row-top{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
-.di-row-title{flex:1 1 220px;min-width:0}
-.di-row-next{margin-left:auto;font-size:.8rem;font-weight:700;white-space:nowrap}
-.di-row-bar{margin-top:.6rem}
-
-@media (max-width:640px){
-  .di-row-next{margin-left:0}
-}
-
-/* two-pane shell (main + context rail) */
-.di-shell{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:1rem;align-items:start}
-@media (max-width:1100px){.di-shell{grid-template-columns:1fr}}
-.di-context-rail{background:var(--bg-w);border:1px solid var(--border);border-radius:14px;padding:1rem;position:sticky;top:80px}
-.di-context-empty{color:var(--text-3);font-size:.78rem}
-.di-context-title{font-size:.95rem;font-weight:800;margin:0 0 .15rem;color:var(--text)}
-.di-context-meta{font-size:.68rem;color:var(--text-3);margin:0 0 .8rem}
-.di-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.6rem}
+.di-field-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.5rem;margin-bottom:.6rem}
 .di-field{background:var(--bg);border-radius:8px;padding:.45rem .55rem}
 .di-field-label{font-size:.56rem;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);font-weight:700;margin:0 0 .1rem}
 .di-field-value{font-size:.82rem;font-weight:700;margin:0;color:var(--text)}

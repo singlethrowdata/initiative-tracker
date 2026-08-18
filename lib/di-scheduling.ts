@@ -246,10 +246,21 @@ interface HistoryEntry {
   blocker_note?: string | null
 }
 
-// The 6 stages shown on the Stage Band and as Board columns — the "active pipeline."
-// Backlog/Done/Blocked/Paused are reachable via List view or segment filters, not board
-// columns (they'd otherwise clutter the board with rarely-moved buckets).
+// The 6 stages shown as Board columns once work is actually queued — the "active
+// pipeline." Done/Blocked/Paused are reachable via the Done/Blocked bucket toggle, not
+// board columns (they'd otherwise clutter the board with rarely-moved buckets).
 export const ACTIVE_PIPELINE_STATUSES = ['In Queue', 'Design', 'Build', 'QA', 'Awaiting Approval', 'Deploy']
+
+// Backlog prepended — the full set of Board columns, so backlog depth (the earliest
+// form of "how backed up are we") is visible in the same view as everything downstream
+// of it, not hidden behind a separate filter.
+export const BOARD_STATUSES: string[] = ['Backlog', ...ACTIVE_PIPELINE_STATUSES]
+
+export function median(nums: number[]): number {
+  if (!nums.length) return 0
+  const sorted = [...nums].sort((a, b) => a - b)
+  return sorted[Math.floor(sorted.length / 2)]
+}
 
 interface StageRowLike {
   design_wks: number | string | null

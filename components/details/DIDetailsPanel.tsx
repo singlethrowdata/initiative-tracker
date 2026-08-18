@@ -16,7 +16,8 @@ interface UpdateRow {
 }
 
 interface Props {
-  initiative: DiInitiative | null
+  initiative: DiInitiative
+  onClose: () => void
   onRefresh: () => void
   onEdit: () => void
   canDelete: boolean
@@ -37,15 +38,23 @@ async function patch(id: string, body: Record<string, unknown>) {
   })
 }
 
-// The context rail — always visible alongside List/Board/Timeline, not a full-screen
-// slide-over. Three sub-tabs mirror the approved mockup exactly.
-export default function DIDetailsPanel({ initiative, onRefresh, onEdit, canDelete, onDelete }: Props) {
+// Full-screen slide-over — the app's standard details-panel chrome (same pattern as the
+// generic Tracker's DetailsPanel), not a permanently-docked rail that ate horizontal
+// space whether or not anything was selected. Opens on selection, closes back to
+// whichever bucket/board view was showing underneath.
+export default function DIDetailsPanel({ initiative, onClose, onRefresh, onEdit, canDelete, onDelete }: Props) {
   const [rtab, setRtab] = useState<'overview' | 'stages' | 'updates'>('overview')
+  const [open, setOpen] = useState(false)
 
-  useEffect(() => { setRtab('overview') }, [initiative?.id])
+  useEffect(() => {
+    setRtab('overview')
+    setOpen(false)
+    requestAnimationFrame(() => setOpen(true))
+  }, [initiative.id])
 
-  if (!initiative) {
-    return <aside className="di-context-rail"><p className="di-context-empty">Pick an initiative to see its stages and updates.</p></aside>
+  function handleClose() {
+    setOpen(false)
+    setTimeout(onClose, 400)
   }
 
   const openStage = initiative.history.find(h => !h.exited_at)
@@ -54,39 +63,49 @@ export default function DIDetailsPanel({ initiative, onRefresh, onEdit, canDelet
   const estTotal = Math.round(estimatedTotalDays(initiative))
 
   return (
-    <aside className="di-context-rail">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '.5rem' }}>
-        <p className="di-context-title">
-          {initiative.project_name}
+    <div className={`details-panel${open ? ' open' : ''}`}>
+      <nav className="details-nav">
+        <div className="details-nav-left">
+          <button className="details-back" onClick={handleClose}>
+            <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" /></svg>
+            Back
+          </button>
+          <div className="details-crumb">D+I Roadmap / <span>{initiative.project_name}</span></div>
           {openStage?.blocker_category && <span className="di-tag-hold">Held</span>}
-        </p>
-        <div style={{ display: 'flex', gap: '.3rem', flexShrink: 0 }}>
-          <button className="icon-btn icon-btn-neutral" onClick={onEdit} title="Edit">
-            <svg viewBox="0 0 24 24" style={{ width: 12, height: 12 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+        </div>
+        <div style={{ display: 'flex', gap: '.5rem', alignItems: 'center' }}>
+          <button className="btn btn-soft btn-sm" onClick={onEdit}>
+            <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+            Edit
           </button>
           {canDelete && (
             <button className="icon-btn" onClick={onDelete} title="Delete">
-              <svg viewBox="0 0 24 24" style={{ width: 12, height: 12 }}><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" /></svg>
+              <svg viewBox="0 0 24 24" style={{ width: 13, height: 13 }}><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" /></svg>
             </button>
           )}
         </div>
-      </div>
-      <p className="di-context-meta">{initiative.tier} · {initiative.type} · {initiative.owner || 'Unassigned'}</p>
+      </nav>
 
-      <div className="di-rtabs">
-        {(['overview', 'stages', 'updates'] as const).map(t => (
-          <button key={t} className={`di-rtab ${rtab === t ? 'on' : ''}`} onClick={() => setRtab(t)}>
-            {t === 'overview' ? 'Overview' : t === 'stages' ? 'Stages' : 'Updates'}
-          </button>
-        ))}
-      </div>
+      <div className="details-body" style={{ maxWidth: 720 }}>
+        <p style={{ fontSize: '.78rem', color: 'var(--text-3)', margin: '0 0 1rem' }}>
+          {initiative.tier} · {initiative.type} · {initiative.owner || 'Unassigned'}
+        </p>
 
-      {rtab === 'overview' && (
-        <OverviewTab initiative={initiative} countdown={countdown} elapsed={elapsed} estTotal={estTotal} onRefresh={onRefresh} />
-      )}
-      {rtab === 'stages' && <StagesTab initiative={initiative} onRefresh={onRefresh} />}
-      {rtab === 'updates' && <UpdatesTab initiative={initiative} />}
-    </aside>
+        <div className="di-rtabs">
+          {(['overview', 'stages', 'updates'] as const).map(t => (
+            <button key={t} className={`di-rtab ${rtab === t ? 'on' : ''}`} onClick={() => setRtab(t)}>
+              {t === 'overview' ? 'Overview' : t === 'stages' ? 'Stages' : 'Updates'}
+            </button>
+          ))}
+        </div>
+
+        {rtab === 'overview' && (
+          <OverviewTab initiative={initiative} countdown={countdown} elapsed={elapsed} estTotal={estTotal} onRefresh={onRefresh} />
+        )}
+        {rtab === 'stages' && <StagesTab initiative={initiative} onRefresh={onRefresh} />}
+        {rtab === 'updates' && <UpdatesTab initiative={initiative} />}
+      </div>
+    </div>
   )
 }
 

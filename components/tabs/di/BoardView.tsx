@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { DiInitiative } from '@/types'
-import { ACTIVE_PIPELINE_STATUSES, currentStageDays, stageEstimateDays } from '@/lib/di-scheduling'
+import { BOARD_STATUSES, currentStageDays, stageEstimateDays, median } from '@/lib/di-scheduling'
 
 interface Props {
   initiatives: DiInitiative[]
@@ -12,21 +12,24 @@ interface Props {
 }
 
 const SHORT: Record<string, string> = {
-  'In Queue': 'Queue', Design: 'Design', Build: 'Build', QA: 'QA', 'Awaiting Approval': 'Approval', Deploy: 'Deploy',
+  Backlog: 'Backlog', 'In Queue': 'Queue', Design: 'Design', Build: 'Build', QA: 'QA',
+  'Awaiting Approval': 'Approval', Deploy: 'Deploy',
 }
 
-// Kanban board over the active pipeline (Backlog/Done/Blocked/Paused live in List view /
-// segment filters instead — see the plan this was built from). Real HTML5 drag-and-drop:
-// dropping a card in a new column PATCHes status through the same route the List view's
-// status dropdown already uses.
+// Kanban over the full board lifecycle (Backlog through Deploy — see BOARD_STATUSES).
+// Done/Blocked/Paused live in their own bucket toggle instead, see DIRoadmapTab. Real
+// HTML5 drag-and-drop: dropping a card in a new column PATCHes status through the same
+// route the status dropdowns already use. Each column header carries count + median
+// days-in-stage directly — the "where's the pileup" signal, without a separate KPI row.
 export default function BoardView({ initiatives, selectedId, onSelect, onStatusChange }: Props) {
   const [draggingId, setDraggingId] = useState<string | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
 
   return (
     <div className="di-board">
-      {ACTIVE_PIPELINE_STATUSES.map(status => {
+      {BOARD_STATUSES.map(status => {
         const items = initiatives.filter(i => i.status === status)
+        const days = items.map(i => Math.round(currentStageDays(i.history) ?? 0))
         return (
           <div
             key={status}
@@ -42,7 +45,7 @@ export default function BoardView({ initiatives, selectedId, onSelect, onStatusC
           >
             <div className="di-board-col-head">
               <span className="di-board-col-name">{SHORT[status]}</span>
-              <span className="di-board-col-count">{items.length}</span>
+              <span className="di-board-col-stats">{items.length} · {median(days)}d med</span>
             </div>
             {items.length === 0 ? (
               <div className="di-board-empty">Open</div>
@@ -53,6 +56,7 @@ export default function BoardView({ initiatives, selectedId, onSelect, onStatusC
                 const pct = est ? Math.min(100, Math.round((actual / est) * 100)) : 0
                 const over = est != null && actual > est
                 const remaining = est != null ? Math.round(est - actual) : null
+                const held = i.history.find(h => !h.exited_at)?.blocker_category
                 return (
                   <div
                     key={i.id}
@@ -62,10 +66,10 @@ export default function BoardView({ initiatives, selectedId, onSelect, onStatusC
                     onDragEnd={() => setDraggingId(null)}
                     onClick={() => onSelect(i.id)}
                   >
-                    <p className="di-card-title">{i.project_name}</p>
+                    <p className="di-card-title">{i.project_name}{held && <span className="di-tag-hold">Held</span>}</p>
                     <div className="di-gauge"><i className={over ? 'over' : pct < 70 ? 'ok' : ''} style={{ width: `${pct}%` }} /></div>
                     <div className="di-card-foot">
-                      <span>{over ? `${Math.round(actual - (est ?? 0))}d over` : remaining != null ? `${remaining}d left` : '—'}</span>
+                      <span>{over ? `${Math.round(actual - (est ?? 0))}d over` : remaining != null ? `${remaining}d left` : status === 'Backlog' ? `${Math.round(actual)}d waiting` : '—'}</span>
                       <span>{i.owner ? i.owner.split(' ')[0] : '—'}</span>
                     </div>
                   </div>
