@@ -253,6 +253,12 @@ table td.td-no-clip{overflow:visible;max-width:none;white-space:nowrap}
 .di-flat-days{margin-left:auto;font-size:.72rem;font-weight:700;color:var(--text-3);white-space:nowrap}
 .di-flat-empty{border:1px dashed var(--border-hover);border-radius:10px;padding:1.5rem;text-align:center;font-size:.75rem;color:var(--text-3)}
 
+/* status-grouped list (the team's working view) */
+.di-list{display:flex;flex-direction:column;gap:1.1rem}
+.di-list-group-head{display:flex;justify-content:space-between;align-items:baseline;font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:var(--text-3);padding:0 .1rem .35rem;border-bottom:1px solid var(--border);margin-bottom:.4rem}
+.di-list-group-count{font-weight:700;color:var(--text-2)}
+.di-list-group .di-flat-row{margin-bottom:.4rem}
+
 /* insight bar — the whole "how backed up are we" summary in one scannable row,
    replacing the old separate Stage Band + Capacity Strip. */
 .di-insight{display:flex;flex-wrap:wrap;gap:1.5rem;align-items:center;background:var(--bg-w);border:1px solid var(--border);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:1rem}

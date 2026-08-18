@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { DiInitiative, TeamMember } from '@/types'
-import { OWNER_VALUES, stageCountdown } from '@/lib/di-scheduling'
+import { OWNER_VALUES, BOARD_STATUSES, stageCountdown } from '@/lib/di-scheduling'
 import InsightBar from '@/components/tabs/di/InsightBar'
 import BoardView from '@/components/tabs/di/BoardView'
 import FlatList from '@/components/tabs/di/FlatList'
+import ListView from '@/components/tabs/di/ListView'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
 import DIDetailsPanel from '@/components/details/DIDetailsPanel'
@@ -18,11 +19,13 @@ interface Props {
 }
 
 type Bucket = 'active' | 'blocked' | 'done'
+type SubView = 'board' | 'list'
 
 export default function DIRoadmapTab({ canDelete }: Props) {
   const [initiatives, setInitiatives] = useState<DiInitiative[]>([])
   const [loading, setLoading] = useState(true)
   const [bucket, setBucket] = useState<Bucket>('active')
+  const [subView, setSubView] = useState<SubView>('list')
   const [search, setSearch] = useState('')
   const [ownerFilter, setOwnerFilter] = useState('')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -102,7 +105,7 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                 <option value="">All owners</option>
                 {OWNER_VALUES.map(o => <option key={o}>{o}</option>)}
               </select>
-              <div className="di-bucket-tabs" style={{ marginLeft: 'auto' }}>
+              <div className="di-bucket-tabs">
                 <button className={`di-bucket-tab${bucket === 'active' ? ' on' : ''}`} onClick={() => setBucket('active')}>
                   Active <b>{active.length}</b>
                 </button>
@@ -113,6 +116,12 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                   Done <b>{done.length}</b>
                 </button>
               </div>
+              {bucket === 'active' && (
+                <div className="di-bucket-tabs" style={{ marginLeft: 'auto' }}>
+                  <button className={`di-bucket-tab${subView === 'list' ? ' on' : ''}`} onClick={() => setSubView('list')}>List</button>
+                  <button className={`di-bucket-tab${subView === 'board' ? ' on' : ''}`} onClick={() => setSubView('board')}>Board</button>
+                </div>
+              )}
             </div>
 
             <div className="di-body">
@@ -125,7 +134,11 @@ export default function DIRoadmapTab({ canDelete }: Props) {
                   <p>{bucket === 'active' ? 'Try a different owner, or clear the search.' : 'Nothing in this bucket right now.'}</p>
                 </div>
               ) : bucket === 'active' ? (
-                <BoardView initiatives={visible} selectedId={selectedId} onSelect={setSelectedId} onStatusChange={handleStatusChange} />
+                subView === 'board' ? (
+                  <BoardView initiatives={visible} selectedId={selectedId} onSelect={setSelectedId} onStatusChange={handleStatusChange} />
+                ) : (
+                  <ListView initiatives={visible} statuses={BOARD_STATUSES} selectedId={selectedId} onSelect={setSelectedId} />
+                )
               ) : (
                 <FlatList
                   initiatives={visible}
