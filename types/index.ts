@@ -148,59 +148,6 @@ export interface InitialData {
   teamList: TeamMember[]
 }
 
-export interface DiStatusHistoryEntry {
-  id: string
-  status: string
-  entered_at: string
-  exited_at: string | null
-  blocker_category: string | null
-  blocker_note: string | null
-  set_by_email?: string
-  set_by_name?: string
-}
-
-export interface DiInitiative {
-  id: string
-  queue_number: number | null // computed — see lib/di-scheduling.ts recalcQueueDates
-  priority: string
-  tier: string
-  type: string
-  project_name: string
-  architect: string
-  owner: string
-  status: string
-  status_note: string
-  date_start: string | null
-  date_completed: string | null
-  description: string
-  outcome: string
-  link: string
-  pace_id: string
-  accelo_id: string
-  rice_r: number | null
-  rice_i: number | null
-  rice_c: number | null
-  design_wks: number
-  build_wks: number
-  qa_wks: number
-  approval_wks: number
-  deploy_wks: number
-  tracker_initiative_id: string | null
-  created_by: string
-  created_by_name: string
-  created_at: string
-  updated_at: string
-  history: DiStatusHistoryEntry[]
-  // computed, attached by the API — not stored
-  design_target: string | null
-  build_target: string | null
-  qa_target: string | null
-  approval_target: string | null
-  deploy_target: string | null
-  rice_score: number | null
-  overdue: boolean
-}
-
 export interface AiRecommendation {
   id: string
   type: 'milestone' | 'note'

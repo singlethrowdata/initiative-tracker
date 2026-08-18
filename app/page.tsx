@@ -8,13 +8,11 @@ import TrackerTab from '@/components/tabs/TrackerTab'
 import ArchiveTab from '@/components/tabs/ArchiveTab'
 import CommunityTab from '@/components/tabs/CommunityTab'
 import PersonalTab from '@/components/tabs/PersonalTab'
-import DIRoadmapTab from '@/components/tabs/DIRoadmapTab'
 
-type Tab = 'tracker' | 'archive' | 'community' | 'personal' | 'di-roadmap'
+type Tab = 'tracker' | 'archive' | 'community' | 'personal'
 
 const TAB_LABEL: Record<Tab, string> = {
   tracker: 'Tracker', archive: 'Archive', community: 'Community', personal: 'Personal',
-  'di-roadmap': 'D+I Roadmap',
 }
 
 export default function Home() {
@@ -79,7 +77,7 @@ export default function Home() {
           <h1>Where <span>ideas</span> become reality.</h1>
           <p>Your quick-capture notebook, the team's whiteboard, and the company's roadmap.</p>
           <div className="tab-bar">
-            {(['personal', 'community', 'tracker', 'archive', 'di-roadmap'] as Tab[]).map(t => (
+            {(['personal', 'community', 'tracker', 'archive'] as Tab[]).map(t => (
               <button
                 key={t}
                 className={`tab-btn${tab === t ? ' active' : ''}`}
@@ -103,9 +101,6 @@ export default function Home() {
           )}
           {tab === 'personal' && (
             <PersonalTab user={user} />
-          )}
-          {tab === 'di-roadmap' && (
-            <DIRoadmapTab user={user} canDelete={canDelete} teamList={teamList} />
           )}
         </div>
 

@@ -36,41 +36,6 @@ export function statusClass(status: string): string {
   return 's-other'
 }
 
-// D+I Roadmap has its own disjoint status vocabulary (Backlog/In Queue/Design/Build/QA/
-// Awaiting Approval/Deploy/Done/Blocked/Paused) so it gets its own color mapping rather
-// than overloading statusClass(). Used for both the status pill and the timeline bar.
-export function diStatusClass(status: string): string {
-  const s = (status ?? '').toLowerCase().trim()
-  if (s === 'backlog') return 'di-backlog'
-  if (s === 'in queue') return 'di-queue'
-  if (s === 'design') return 'di-design'
-  if (s === 'build') return 'di-build'
-  if (s === 'qa') return 'di-qa'
-  if (s === 'awaiting approval') return 'di-approval'
-  if (s === 'deploy') return 'di-deploy'
-  if (s === 'done') return 'di-done'
-  if (s === 'blocked') return 'di-blocked'
-  if (s === 'paused') return 'di-paused'
-  return 'di-other'
-}
-
-// Solid-fill variant for StageTimelineBar segments (diStatusClass above is the light
-// pill-tint variant used for the status badge).
-export function diSegClass(status: string): string {
-  const s = (status ?? '').toLowerCase().trim()
-  if (s === 'backlog') return 'di-seg-backlog'
-  if (s === 'in queue') return 'di-seg-queue'
-  if (s === 'design') return 'di-seg-design'
-  if (s === 'build') return 'di-seg-build'
-  if (s === 'qa') return 'di-seg-qa'
-  if (s === 'awaiting approval') return 'di-seg-approval'
-  if (s === 'deploy') return 'di-seg-deploy'
-  if (s === 'done') return 'di-seg-done'
-  if (s === 'blocked') return 'di-seg-blocked'
-  if (s === 'paused') return 'di-seg-paused'
-  return 'di-seg-other'
-}
-
 export function priorityClass(priority: string): string {
   if (priority === 'High') return 'p-high'
   if (priority === 'Medium') return 'p-med'
