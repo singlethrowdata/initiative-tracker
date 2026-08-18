@@ -1,7 +1,7 @@
 import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.RESEND_FROM ?? 'noreply@singlethrow.com'
+const FROM = process.env.RESEND_FROM ?? 'noreply@notify.singlethrow.com'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
 const header = (title: string) =>
