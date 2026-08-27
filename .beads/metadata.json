@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "initiative_tracker",
+  "project_id": "0daf8147-bb66-40ab-801e-fd4ffc1d3147"
+}
