@@ -156,3 +156,72 @@ export interface AiRecommendation {
   target_date: string
   approved: boolean
 }
+
+export interface DiStatusHistoryEntry {
+  id: string
+  status: string
+  entered_at: string
+  exited_at: string | null
+  blocker_category: string | null
+  blocker_note: string | null
+  set_by_email?: string
+  set_by_name?: string
+}
+
+export interface DiUpdate {
+  id: string
+  di_initiative_id: string
+  user_email: string
+  user_name: string
+  content: string
+  created_at: string
+}
+
+export interface DiInitiative {
+  id: string
+  queue_position: number | null
+  priority: string
+  tier: string
+  type: string
+  project_name: string
+  architect: string
+  owner: string
+  status: string
+  status_note: string
+  size_preset: string
+  date_start: string | null
+  date_completed: string | null
+  description: string
+  outcome: string
+  link: string
+  pace_id: string
+  accelo_id: string
+  rice_r: number | null
+  rice_i: number | null
+  rice_c: number | null
+  design_wks: number
+  build_wks: number
+  qa_wks: number
+  approval_wks: number
+  deploy_wks: number
+  tracker_initiative_id: string | null
+  tracker_initiative_name?: string | null
+  created_by: string
+  created_by_name: string
+  created_at: string
+  updated_at: string
+  history: DiStatusHistoryEntry[]
+  // computed by the API from lib/di-scheduling.ts — not stored columns
+  in_flight: boolean
+  rice_score: number | null
+  target_date: string | null
+  variance_weeks: number | null
+  starts_in_weeks: number | null
+}
+
+export interface DiConfig {
+  capacity_budget_weeks: number
+  wip_cap: number
+  size_presets: Record<string, { design: number; build: number; qa: number; approval: number; deploy: number }>
+  team_emails: string[]
+}

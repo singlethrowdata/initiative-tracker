@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>D+I Roadmap — design mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens copied verbatim from app/globals.css — do not invent new ones ── */
+:root{
+  --blue:#1A5276;--blue-l:#2980B9;--blue-xl:#5DADE2;--blue-bg:rgba(26,82,118,0.06);
+  --green:#6B8F71;--green-l:#82A888;--green-xl:#A3D9A5;--green-bg:rgba(107,143,113,0.06);
+  --gray:#6E6F71;--gray-l:#B0B1B3;
+  --bg:#F4F6F8;--bg-w:#FFFFFF;--bg-glass:rgba(255,255,255,0.72);
+  --border:rgba(26,82,118,0.1);--border-hover:rgba(26,82,118,0.22);
+  --text:#1B2A3B;--text-2:#4A6274;--text-3:#8899A6;
+  --shadow:0 2px 16px rgba(26,82,118,0.08);--shadow-lg:0 12px 40px rgba(26,82,118,0.12);
+  --font:'Montserrat',sans-serif;
+  --danger:#D94F4F;--danger-bg:rgba(217,79,79,0.08);
+  --amber:#D4920A;--amber-bg:rgba(245,166,35,0.12);
+  --grad:linear-gradient(135deg,#1A5276,#2980B9,#6B8F71);
+  --grad-btn:linear-gradient(135deg,#1A5276 0%,#2980B9 50%,#6B8F71 100%);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+
+/* ── Nav (matches app/globals.css nav pattern) ── */
+nav{position:sticky;top:0;left:0;right:0;z-index:100;padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between;background:var(--bg-glass);backdrop-filter:blur(20px) saturate(1.4);border-bottom:1px solid var(--border)}
+.logo{display:flex;align-items:center;gap:.7rem}
+.logo-icon{width:38px;height:38px;background:var(--grad);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(26,82,118,0.2);flex-shrink:0}
+.logo-icon svg{width:20px;height:20px;fill:none;stroke:#fff;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.logo-text{font-weight:800;font-size:.9rem;letter-spacing:.04em}
+.logo-text small{display:block;font-weight:600;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;color:var(--blue-l);margin-top:-1px}
+.tab-bar{display:flex;gap:.4rem}
+.tab-btn{padding:.55rem 1.1rem;border-radius:100px;font-family:var(--font);font-size:.78rem;font-weight:700;color:var(--text-3);background:transparent;border:1.5px solid transparent;cursor:default}
+.tab-btn.active{color:#fff;background:var(--grad-btn);border-color:transparent;box-shadow:0 4px 20px rgba(26,82,118,0.25)}
+.role-toggle{display:flex;align-items:center;gap:.5rem;font-size:.68rem;font-weight:700;color:var(--text-3)}
+.role-toggle-track{display:inline-flex;border:1.5px solid var(--border);border-radius:100px;padding:2px;background:var(--bg-w)}
+.role-toggle-btn{border:none;background:transparent;padding:.35rem .8rem;border-radius:100px;font-family:var(--font);font-size:.68rem;font-weight:700;color:var(--text-3);cursor:pointer}
+.role-toggle-btn[aria-pressed="true"]{background:var(--blue);color:#fff}
+
+/* ── Page shell ── */
+.main{max-width:1240px;margin:0 auto;padding:2rem 2rem 4rem}
+.page-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:1.25rem}
+.page-head h1{font-size:1.5rem;font-weight:900;letter-spacing:-.02em}
+.capacity-chip{display:inline-flex;align-items:center;gap:.4rem;background:var(--bg-w);border:1.5px solid var(--border);border-radius:100px;padding:.4rem .9rem .4rem .7rem;font-size:.74rem;font-weight:700;color:var(--text-2);box-shadow:var(--shadow)}
+.capacity-chip .dot{width:8px;height:8px;border-radius:50%;background:var(--blue-l)}
+.capacity-chip b{color:var(--text)}
+
+/* ── Next Opening headline card ── */
+.next-opening{background:var(--bg-w);border:1.5px solid var(--border);border-left:4px solid var(--blue-l);border-radius:20px;padding:1.5rem 1.75rem;margin-bottom:2rem;box-shadow:var(--shadow-lg)}
+.next-opening-label{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--blue-l);margin-bottom:.5rem}
+.next-opening-copy{font-size:1.02rem;line-height:1.6;color:var(--text);max-width:640px}
+.next-opening-copy b{font-weight:800}
+.size-picker{display:flex;align-items:center;gap:.75rem;margin-top:1.1rem;flex-wrap:wrap}
+.size-picker-label{font-size:.72rem;font-weight:700;color:var(--text-3)}
+.size-btn{border:1.5px solid var(--border);background:var(--bg-w);color:var(--text-2);font-family:var(--font);font-weight:700;font-size:.78rem;padding:.4rem 1rem;border-radius:10px;cursor:pointer;transition:all .2s}
+.size-btn:hover{border-color:var(--border-hover)}
+.size-btn[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.size-result{font-size:.85rem;font-weight:700;color:var(--blue)}
+
+/* ── Section headers ── */
+.section-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 .9rem;flex-wrap:wrap;gap:.5rem}
+.section-h h2{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--text-3)}
+.section-actions{display:flex;gap:.5rem}
+.btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:10px;font-family:var(--font);font-weight:700;font-size:.75rem;cursor:pointer;border:1.5px solid var(--border);background:var(--bg-w);color:var(--text-2);transition:all .2s}
+.btn:hover{border-color:var(--border-hover);box-shadow:var(--shadow)}
+.btn-grad{background:var(--grad-btn);color:#fff;border-color:transparent;box-shadow:0 4px 16px rgba(26,82,118,0.2)}
+
+/* ── Gantt timeline scale ── */
+.gantt-wrap{background:var(--bg-w);border:1.5px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden;margin-bottom:2rem}
+.gantt-scale-head{position:relative;display:grid;grid-template-columns:260px 1fr 84px;align-items:center;padding:.6rem 1.25rem;border-bottom:1px solid var(--border);background:var(--bg)}
+.gantt-scale-head .lbl{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--text-3)}
+.gantt-scale-head .today-lbl{position:absolute;left:calc(260px + (100% - 260px - 84px) * 0.4);top:50%;transform:translate(-50%,-50%);font-size:.62rem;font-weight:800;color:var(--blue);background:var(--blue-bg);padding:.15rem .5rem;border-radius:100px;white-space:nowrap}
+.gantt-rows{position:relative}
+.gantt-rows::before{content:"";position:absolute;left:calc(260px + (100% - 260px - 84px) * 0.4);top:0;bottom:0;width:2px;background:repeating-linear-gradient(180deg,var(--blue-l) 0 4px,transparent 4px 8px);z-index:2;pointer-events:none}
+.gantt-row{display:grid;grid-template-columns:260px 1fr 84px;align-items:center;gap:1rem;padding:1rem 1.25rem;border-bottom:1px solid var(--border)}
+.gantt-row:last-child{border-bottom:none}
+.gantt-meta{min-width:0}
+.gantt-name-line{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.gantt-name{font-weight:700;font-size:.85rem;color:var(--text)}
+.size-badge{font-size:.58rem;font-weight:800;color:var(--text-3);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.08rem .35rem}
+.link-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:var(--blue-l)}
+.link-badge svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
+.gantt-sub{display:flex;align-items:center;gap:.4rem;margin-top:.3rem}
+.owner-avatar{width:20px;height:20px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:800;color:#fff;flex-shrink:0}
+.state-tag{font-size:.62rem;font-weight:700;padding:.1rem .45rem;border-radius:100px;display:inline-flex;align-items:center;gap:.25rem}
+.state-tag.blocked{background:var(--danger-bg);color:var(--danger)}
+.state-tag.approval{background:var(--amber-bg);color:var(--amber)}
+.waiting-note{font-size:.66rem;color:var(--text-3);margin-top:.25rem}
+.waiting-note b{color:var(--text-2)}
+
+.gantt-bar{position:relative;height:22px;border-radius:6px;overflow:hidden;display:flex;background:var(--bg)}
+.seg{height:100%}
+.seg-design{background:var(--blue-xl)}
+.seg-build{background:var(--blue-l)}
+.seg-qa{background:var(--blue)}
+.seg-deploy{background:var(--green)}
+.seg-waiting{background:repeating-linear-gradient(45deg,var(--amber-bg),var(--amber-bg) 4px,rgba(212,146,10,0.25) 4px,rgba(212,146,10,0.25) 8px)}
+.seg-remaining{background:var(--border)}
+.stage-labels{display:flex;gap:.6rem;margin-top:.35rem}
+.stage-labels span{font-size:.56rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3)}
+
+.variance{font-size:.76rem;font-weight:800;text-align:right}
+.variance.behind{color:var(--danger)}
+.variance.ontrack{color:var(--green)}
+
+/* ── Owner-only affordances ── */
+.owner-only{display:none}
+[data-role="owner"] .owner-only{display:flex}
+[data-role="owner"] .drag-handle{display:inline-flex}
+.drag-handle{display:none;align-items:center;justify-content:center;width:18px;color:var(--text-3);cursor:grab;flex-shrink:0}
+.gantt-row{position:relative}
+[data-role="owner"] .gantt-row .gantt-meta{padding-left:1.4rem}
+[data-role="owner"] .gantt-row .drag-handle{position:absolute;left:1.25rem}
+.edit-link{font-size:.68rem;font-weight:700;color:var(--blue-l);background:none;border:none;font-family:var(--font);cursor:pointer;margin-top:.3rem;padding:0}
+
+/* ── Queue list ── */
+.queue-list{background:var(--bg-w);border:1.5px solid var(--border);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.queue-row{display:flex;align-items:center;gap:1rem;padding:.9rem 1.25rem;border-bottom:1px solid var(--border)}
+.queue-row:last-child{border-bottom:none}
+.queue-rank{width:22px;height:22px;border-radius:50%;background:var(--blue-bg);color:var(--blue);font-size:.68rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.queue-name{flex:1;font-weight:700;font-size:.82rem;min-width:0}
+.queue-rice{font-size:.62rem;font-weight:700;color:var(--text-3);background:var(--bg);border-radius:6px;padding:.1rem .4rem;flex-shrink:0}
+.queue-eta{font-size:.76rem;font-weight:700;color:var(--text-2);flex-shrink:0;white-space:nowrap}
+
+@media (max-width: 860px){
+  .gantt-scale-head,.gantt-row{grid-template-columns:1fr;gap:.5rem}
+  .variance{text-align:left}
+  .gantt-scale-head .today-lbl,.gantt-rows::before{display:none}
+}
+@media (max-width: 600px){
+  .main{padding:1.25rem 1rem 3rem}
+  nav{padding:0 1rem}
+  .tab-bar{display:none}
+}
+</style>
+</head>
+<body data-role="viewer">
+
+<nav>
+  <div class="logo">
+    <div class="logo-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M4 17V7l8-4 8 4v10l-8 4-8-4Z"/></svg>
+    </div>
+    <div class="logo-text">TRACKER<small>Single Throw Marketing</small></div>
+  </div>
+  <div class="tab-bar" role="tablist" aria-label="Primary">
+    <button class="tab-btn" role="tab" aria-selected="false">Tracker</button>
+    <button class="tab-btn" role="tab" aria-selected="false">Archive</button>
+    <button class="tab-btn" role="tab" aria-selected="false">Community</button>
+    <button class="tab-btn" role="tab" aria-selected="false">Personal</button>
+    <button class="tab-btn active" role="tab" aria-selected="true">D+I Roadmap</button>
+  </div>
+  <div class="role-toggle">
+    Preview as
+    <span class="role-toggle-track">
+      <button type="button" class="role-toggle-btn" id="btn-viewer" aria-pressed="true">Company viewer</button>
+      <button type="button" class="role-toggle-btn" id="btn-owner" aria-pressed="false">Owner</button>
+    </span>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="page-head">
+    <h1>D+I Roadmap</h1>
+    <span class="capacity-chip"><span class="dot" aria-hidden="true"></span>capacity: <b>1.2 / 1.5</b>&nbsp;wk</span>
+  </div>
+
+  <section class="next-opening" aria-labelledby="next-opening-h">
+    <div class="next-opening-label" id="next-opening-h">Next opening</div>
+    <p class="next-opening-copy">
+      A new <b id="size-word">Medium</b> project requested today would start
+      <b id="size-start">~2.1 wks</b> from now and finish
+      <b id="size-finish">~8.2 wks</b> from now.
+    </p>
+    <div class="size-picker" role="group" aria-label="Estimate for a different size">
+      <span class="size-picker-label">Estimate for a different size:</span>
+      <button type="button" class="size-btn" data-size="S" data-start="2.1" data-finish="5.0">S</button>
+      <button type="button" class="size-btn" aria-pressed="true" data-size="M" data-start="2.1" data-finish="8.2">M</button>
+      <button type="button" class="size-btn" data-size="L" data-start="2.1" data-finish="12.6">L</button>
+    </div>
+  </section>
+
+  <div class="section-h">
+    <h2>Active</h2>
+    <div class="section-actions owner-only">
+      <button class="btn btn-grad" type="button">+ Add project</button>
+    </div>
+  </div>
+
+  <div class="gantt-wrap">
+    <div class="gantt-scale-head">
+      <span class="lbl">Project</span>
+      <span class="lbl">Timeline</span>
+      <span class="lbl" style="text-align:right">Variance</span>
+      <span class="today-lbl">Today</span>
+    </div>
+    <div class="gantt-rows">
+
+      <div class="gantt-row">
+        <span class="drag-handle" aria-hidden="true">⠿</span>
+        <div class="gantt-meta">
+          <div class="gantt-name-line">
+            <span class="gantt-name">Lead Scoring Model</span>
+            <span class="size-badge">M</span>
+            <span class="link-badge" title="Linked to Tracker initiative: Sales Enablement Q3">
+              <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.5-1.5"/></svg>
+            </span>
+          </div>
+          <div class="gantt-sub">
+            <span class="owner-avatar">CB</span>
+            <span class="waiting-note">architect: <b>Charles Blain</b></span>
+          </div>
+          <button class="edit-link owner-only" type="button">Edit stages ›</button>
+        </div>
+        <div>
+          <div class="gantt-bar" role="img" aria-label="Design and build complete, currently in QA, running 1.5 weeks behind target">
+            <div class="seg seg-design" style="width:12%"></div>
+            <div class="seg seg-build" style="width:26%"></div>
+            <div class="seg seg-qa" style="width:16%"></div>
+            <div class="seg seg-remaining" style="width:32%"></div>
+          </div>
+          <div class="stage-labels"><span>Design</span><span>Build</span><span>QA·now</span></div>
+        </div>
+        <div class="variance behind">+1.5wk</div>
+      </div>
+
+      <div class="gantt-row">
+        <span class="drag-handle" aria-hidden="true">⠿</span>
+        <div class="gantt-meta">
+          <div class="gantt-name-line">
+            <span class="gantt-name">Client Health Dashboard</span>
+            <span class="size-badge">L</span>
+          </div>
+          <div class="gantt-sub">
+            <span class="owner-avatar" style="background:var(--grad-warm,var(--green))">DW</span>
+            <span class="waiting-note">architect: <b>Darian Ward</b></span>
+          </div>
+          <button class="edit-link owner-only" type="button">Edit stages ›</button>
+        </div>
+        <div>
+          <div class="gantt-bar" role="img" aria-label="In build stage, on track">
+            <div class="seg seg-design" style="width:10%"></div>
+            <div class="seg seg-build" style="width:14%"></div>
+            <div class="seg seg-remaining" style="width:56%"></div>
+          </div>
+          <div class="stage-labels"><span>Design</span><span>Build·now</span></div>
+        </div>
+        <div class="variance ontrack">on track</div>
+      </div>
+
+      <div class="gantt-row">
+        <span class="drag-handle" aria-hidden="true">⠿</span>
+        <div class="gantt-meta">
+          <div class="gantt-name-line">
+            <span class="gantt-name">Ad Spend Pacing Alert</span>
+            <span class="size-badge">S</span>
+            <span class="state-tag blocked">⏸ blocked</span>
+          </div>
+          <div class="gantt-sub">
+            <span class="owner-avatar">CB</span>
+          </div>
+          <p class="waiting-note">waiting on: <b>client data access</b></p>
+          <button class="edit-link owner-only" type="button">Edit stages ›</button>
+        </div>
+        <div>
+          <div class="gantt-bar" role="img" aria-label="Blocked waiting on client, does not draw down the capacity budget">
+            <div class="seg seg-design" style="width:8%"></div>
+            <div class="seg seg-build" style="width:6%"></div>
+            <div class="seg seg-waiting" style="width:22%"></div>
+            <div class="seg seg-remaining" style="width:44%"></div>
+          </div>
+          <div class="stage-labels"><span>Design</span><span>Build</span><span>Blocked·now</span></div>
+        </div>
+        <div class="variance behind">+0.8wk</div>
+      </div>
+
+      <div class="gantt-row">
+        <span class="drag-handle" aria-hidden="true">⠿</span>
+        <div class="gantt-meta">
+          <div class="gantt-name-line">
+            <span class="gantt-name">SOP: Onboarding Import</span>
+            <span class="size-badge">S</span>
+            <span class="state-tag approval">⏳ approval</span>
+          </div>
+          <div class="gantt-sub">
+            <span class="owner-avatar" style="background:var(--grad-warm,var(--green))">DW</span>
+          </div>
+          <button class="edit-link owner-only" type="button">Edit stages ›</button>
+        </div>
+        <div>
+          <div class="gantt-bar" role="img" aria-label="Awaiting approval, on track, does not draw down the capacity budget">
+            <div class="seg seg-design" style="width:10%"></div>
+            <div class="seg seg-build" style="width:16%"></div>
+            <div class="seg seg-qa" style="width:8%"></div>
+            <div class="seg seg-waiting" style="width:18%"></div>
+            <div class="seg seg-remaining" style="width:20%"></div>
+          </div>
+          <div class="stage-labels"><span>Design</span><span>Build</span><span>QA</span><span>Approval·now</span></div>
+        </div>
+        <div class="variance ontrack">on track</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="section-h">
+    <h2>Queued — next up, by priority</h2>
+    <div class="section-actions owner-only">
+      <button class="btn" type="button">⇅ Reorder queue</button>
+    </div>
+  </div>
+
+  <div class="queue-list">
+    <div class="queue-row">
+      <span class="drag-handle" aria-hidden="true" style="display:inline-flex;position:static">⠿</span>
+      <span class="queue-rank">1</span>
+      <span class="queue-name">Attribution Model Rebuild <span class="size-badge">L</span></span>
+      <span class="queue-rice">RICE 42</span>
+      <span class="queue-eta">starts in ~2.1 wks</span>
+    </div>
+    <div class="queue-row">
+      <span class="drag-handle" aria-hidden="true" style="display:inline-flex;position:static">⠿</span>
+      <span class="queue-rank">2</span>
+      <span class="queue-name">Internal Time Tracker <span class="size-badge">M</span></span>
+      <span class="queue-rice">RICE 31</span>
+      <span class="queue-eta">starts in ~4.6 wks</span>
+    </div>
+    <div class="queue-row">
+      <span class="drag-handle" aria-hidden="true" style="display:inline-flex;position:static">⠿</span>
+      <span class="queue-rank">3</span>
+      <span class="queue-name">Report Auto-scheduler <span class="size-badge">S</span></span>
+      <span class="queue-rice">RICE 19</span>
+      <span class="queue-eta">starts in ~6.0 wks</span>
+    </div>
+  </div>
+</main>
+
+<script>
+// Role toggle — review aid only. The real app decides this from the signed-in
+// user's identity, never a client-side switch.
+var btnViewer = document.getElementById('btn-viewer');
+var btnOwner = document.getElementById('btn-owner');
+function setRole(role){
+  document.body.setAttribute('data-role', role);
+  btnViewer.setAttribute('aria-pressed', String(role === 'viewer'));
+  btnOwner.setAttribute('aria-pressed', String(role === 'owner'));
+}
+btnViewer.addEventListener('click', function(){ setRole('viewer'); });
+btnOwner.addEventListener('click', function(){ setRole('owner'); });
+
+// Size picker — recomputes the headline sentence from each button's own
+// data-start/data-finish (hardcoded mockup values; the real app derives these
+// from the shared capacity budget + queue, per docs/adr/0001).
+var sizeBtns = document.querySelectorAll('.size-btn');
+var sizeWord = document.getElementById('size-word');
+var sizeStart = document.getElementById('size-start');
+var sizeFinish = document.getElementById('size-finish');
+var sizeNames = { S: 'Small', M: 'Medium', L: 'Large' };
+sizeBtns.forEach(function(btn){
+  btn.addEventListener('click', function(){
+    sizeBtns.forEach(function(b){ b.setAttribute('aria-pressed', 'false'); });
+    btn.setAttribute('aria-pressed', 'true');
+    sizeWord.textContent = sizeNames[btn.dataset.size];
+    sizeStart.textContent = '~' + btn.dataset.start + ' wks';
+    sizeFinish.textContent = '~' + btn.dataset.finish + ' wks';
+  });
+});
+</script>
+</body>
+</html>
