@@ -10,6 +10,7 @@ import QueueRow from '@/components/tabs/di/QueueRow'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
 import ChangeStageModal from '@/components/modals/ChangeStageModal'
+import DiNotesModal from '@/components/modals/DiNotesModal'
 
 interface SizeEntry { startsInWeeks: number; finishesInWeeks: number }
 interface Capacity {
@@ -32,6 +33,7 @@ export default function DIRoadmapTab() {
   const [showCreate, setShowCreate] = useState(false)
   const [editTarget, setEditTarget] = useState<DiInitiative | null>(null)
   const [stageTarget, setStageTarget] = useState<DiInitiative | null>(null)
+  const [notesTarget, setNotesTarget] = useState<DiInitiative | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
   const [queueOrder, setQueueOrder] = useState<string[]>([])
 
@@ -132,7 +134,7 @@ export default function DIRoadmapTab() {
               <div className="empty"><p>No active projects.</p></div>
             ) : (
               activeRows.map(row => (
-                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} onChangeStage={() => setStageTarget(row)} />
+                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} onChangeStage={() => setStageTarget(row)} onNotes={() => setNotesTarget(row)} />
               ))
             )}
           </div>
@@ -163,6 +165,7 @@ export default function DIRoadmapTab() {
                 onDrop={handleDrop}
                 onDragEnd={() => setDragId(null)}
                 onChangeStage={() => setStageTarget(row)}
+                onNotes={() => setNotesTarget(row)}
               />
             ))
           )}
@@ -189,6 +192,14 @@ export default function DIRoadmapTab() {
           initiative={stageTarget}
           onClose={() => setStageTarget(null)}
           onSaved={() => { setStageTarget(null); load() }}
+        />
+      )}
+
+      {notesTarget && (
+        <DiNotesModal
+          initiative={notesTarget}
+          isDiTeam={isDiTeam}
+          onClose={() => setNotesTarget(null)}
         />
       )}
     </>
