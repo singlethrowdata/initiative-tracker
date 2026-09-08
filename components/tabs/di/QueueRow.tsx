@@ -13,12 +13,13 @@ interface Props {
   onDragOver: (e: React.DragEvent) => void
   onDrop: () => void
   onDragEnd: () => void
+  onChangeStage: () => void
 }
 
 /** One row of the Queued backlog list. Drag-and-drop (native HTML5 DnD, matching
  * the mockup's drag-handle glyph) is only wired up here, per lexicon.md's Queue
  * Order entry — the Active Gantt has no such affordance. */
-export default function QueueRow({ initiative, rank, isDiTeam, dragging, onDragStart, onDragOver, onDrop, onDragEnd }: Props) {
+export default function QueueRow({ initiative, rank, isDiTeam, dragging, onDragStart, onDragOver, onDrop, onDragEnd, onChangeStage }: Props) {
   return (
     <div
       className={`queue-row${dragging ? ' dragging' : ''}`}
@@ -38,6 +39,11 @@ export default function QueueRow({ initiative, rank, isDiTeam, dragging, onDragS
       <span className="queue-eta">
         {initiative.starts_in_weeks != null ? `starts in ~${initiative.starts_in_weeks.toFixed(1)} wks` : 'starts in \u2014'}
       </span>
+      {isDiTeam && (
+        <button className="edit-link" type="button" onClick={onChangeStage}>
+          Change Stage &#8250;
+        </button>
+      )}
     </div>
   )
 }

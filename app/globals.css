@@ -562,3 +562,8 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
   .variance{text-align:left}
   .gantt-scale-head .today-lbl,.gantt-rows::before{display:none}
 }
+
+.gantt-actions{display:flex;align-items:center;gap:.75rem;margin-top:.3rem}
+.gantt-actions .edit-link{margin-top:0}
+.stage-current{font-size:.82rem;color:var(--text-2);line-height:1.6;margin-bottom:1rem}
+.stage-hint{font-size:.72rem;color:var(--text-3);margin-top:.5rem}

@@ -9,6 +9,7 @@ import GanttRow from '@/components/tabs/di/GanttRow'
 import QueueRow from '@/components/tabs/di/QueueRow'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
+import ChangeStageModal from '@/components/modals/ChangeStageModal'
 
 interface SizeEntry { startsInWeeks: number; finishesInWeeks: number }
 interface Capacity {
@@ -30,6 +31,7 @@ export default function DIRoadmapTab() {
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [editTarget, setEditTarget] = useState<DiInitiative | null>(null)
+  const [stageTarget, setStageTarget] = useState<DiInitiative | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
   const [queueOrder, setQueueOrder] = useState<string[]>([])
 
@@ -130,7 +132,7 @@ export default function DIRoadmapTab() {
               <div className="empty"><p>No active projects.</p></div>
             ) : (
               activeRows.map(row => (
-                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} />
+                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} onChangeStage={() => setStageTarget(row)} />
               ))
             )}
           </div>
@@ -160,6 +162,7 @@ export default function DIRoadmapTab() {
                 onDragOver={e => handleDragOver(e, row.id)}
                 onDrop={handleDrop}
                 onDragEnd={() => setDragId(null)}
+                onChangeStage={() => setStageTarget(row)}
               />
             ))
           )}
@@ -178,6 +181,14 @@ export default function DIRoadmapTab() {
           initiative={editTarget}
           onClose={() => setEditTarget(null)}
           onSaved={() => { setEditTarget(null); load() }}
+        />
+      )}
+
+      {stageTarget && (
+        <ChangeStageModal
+          initiative={stageTarget}
+          onClose={() => setStageTarget(null)}
+          onSaved={() => { setStageTarget(null); load() }}
         />
       )}
     </>

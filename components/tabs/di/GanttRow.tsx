@@ -25,12 +25,13 @@ interface Props {
   initiative: DiInitiative
   isDiTeam: boolean
   onEdit: () => void
+  onChangeStage: () => void
 }
 
 /** One row of the Active Gantt. No drag-handle here — reordering is only defined
  * for the Queued backlog list (lexicon.md "Queue Order"); Active rows have no
  * specified drag behavior in the approved mockup, so it's omitted. */
-export default function GanttRow({ initiative, isDiTeam, onEdit }: Props) {
+export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage }: Props) {
   const open = initiative.history.find(h => !h.exited_at)
   const varianceWeeks = initiative.variance_weeks
   const varianceLabel = varianceWeeks == null
@@ -79,9 +80,14 @@ export default function GanttRow({ initiative, isDiTeam, onEdit }: Props) {
           <p className="waiting-note">note: <b>{initiative.status_note}</b></p>
         )}
         {isDiTeam && (
-          <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onEdit() }}>
-            Edit stages &#8250;
-          </button>
+          <div className="gantt-actions">
+            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onEdit() }}>
+              Edit details &#8250;
+            </button>
+            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onChangeStage() }}>
+              Change Stage &#8250;
+            </button>
+          </div>
         )}
       </div>
       <StageBar initiative={initiative} />
