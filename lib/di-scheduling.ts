@@ -37,9 +37,11 @@ export const OWNER_VALUES = ['Charles Blain', 'Darian Ward', 'Both', 'TBD', 'Oth
 export const BLOCKER_CATEGORIES = ['internal_capacity', 'pm_scheduling', 'client_external', 'other'] as const
 export type BlockerCategory = typeof BLOCKER_CATEGORIES[number]
 
-// ADR-0002: the two people whose sign-in grants create/edit control. Seeded into
-// di_config.team_emails so it's editable without a redeploy if the team's headcount changes.
-export const DEFAULT_TEAM_EMAILS = ['cblain@singlethrow.com', 'dward@singlethrow.com']
+// ADR-0002/ADR-0005: the people whose sign-in grants create/edit control.
+// cblain@/dward@ are the two D+I builders; submissions@ is the shared STM
+// admin identity, granted permanently (ADR-0005), not per-testing-session.
+// Seeded into di_config.team_emails so it's editable without a redeploy.
+export const DEFAULT_TEAM_EMAILS = ['cblain@singlethrow.com', 'dward@singlethrow.com', 'submissions@singlethrow.com']
 
 // ADR-0001: combined weekly bandwidth, in person-weeks/week, config-driven.
 export const DEFAULT_CAPACITY_BUDGET_WEEKS = 1.5
