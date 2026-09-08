@@ -1,6 +1,7 @@
 'use client'
 
 import { DiInitiative } from '@/types'
+import { stintDays } from '@/lib/di-scheduling'
 
 const SIZE_LETTER: Record<string, string> = { Small: 'S', Medium: 'M', Large: 'L', Custom: 'C' }
 
@@ -15,12 +16,16 @@ interface Props {
   onDragEnd: () => void
   onChangeStage: () => void
   onNotes: () => void
+  onHistory: () => void
 }
 
 /** One row of the Queued backlog list. Drag-and-drop (native HTML5 DnD, matching
  * the mockup's drag-handle glyph) is only wired up here, per lexicon.md's Queue
  * Order entry — the Active Gantt has no such affordance. */
-export default function QueueRow({ initiative, rank, isDiTeam, dragging, onDragStart, onDragOver, onDrop, onDragEnd, onChangeStage, onNotes }: Props) {
+export default function QueueRow({ initiative, rank, isDiTeam, dragging, onDragStart, onDragOver, onDrop, onDragEnd, onChangeStage, onNotes, onHistory }: Props) {
+  const open = initiative.history.find(h => !h.exited_at)
+  const queuedDays = open ? Math.round(stintDays(open)) : null
+
   return (
     <div
       className={`queue-row${dragging ? ' dragging' : ''}`}
@@ -37,9 +42,13 @@ export default function QueueRow({ initiative, rank, isDiTeam, dragging, onDragS
         <span className="size-badge">{SIZE_LETTER[initiative.size_preset] ?? initiative.size_preset}</span>
       </span>
       <span className="queue-rice">RICE {initiative.rice_score != null ? Math.round(initiative.rice_score) : '\u2014'}</span>
+      {queuedDays != null && <span className="days-badge days-neutral">{queuedDays}d in {open!.status}</span>}
       <span className="queue-eta">
         {initiative.starts_in_weeks != null ? `starts in ~${initiative.starts_in_weeks.toFixed(1)} wks` : 'starts in \u2014'}
       </span>
+      <button className="edit-link" type="button" onClick={onHistory}>
+        History &#8250;
+      </button>
       <button className="edit-link" type="button" onClick={onNotes}>
         Notes &#8250;
       </button>

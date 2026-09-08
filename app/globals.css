@@ -567,3 +567,20 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
 .gantt-actions .edit-link{margin-top:0}
 .stage-current{font-size:.82rem;color:var(--text-2);line-height:1.6;margin-bottom:1rem}
 .stage-hint{font-size:.72rem;color:var(--text-3);margin-top:.5rem}
+
+.days-badge.days-neutral{background:var(--bg);color:var(--text-3)}
+
+.duration-hint{font-size:.72rem;color:var(--text-3);margin-bottom:1rem;max-width:640px;line-height:1.5}
+.duration-row{display:grid;grid-template-columns:110px 1fr auto;align-items:center;gap:.75rem;margin-bottom:.55rem}
+.duration-row:last-child{margin-bottom:0}
+.duration-label{font-size:.7rem;font-weight:700;color:var(--text-2)}
+.duration-track{height:8px;border-radius:100px;background:var(--bg);overflow:hidden}
+.duration-fill{height:100%;background:var(--blue-l);border-radius:100px}
+.duration-value{font-size:.66rem;color:var(--text-3);white-space:nowrap;font-weight:600}
+@media (max-width: 860px){
+  .duration-row{grid-template-columns:90px 1fr;grid-template-areas:"label value" "track track"}
+  .duration-label{grid-area:label}
+  .duration-value{grid-area:value;text-align:right}
+  .duration-track{grid-area:track}
+}
+.queue-row .days-badge{flex-shrink:0}

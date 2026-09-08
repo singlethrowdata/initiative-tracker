@@ -347,6 +347,14 @@ export function stageEstimateDays(row: DiInitiativeRow, status: string): number 
   return bufferedStageWeeks(row, status) * 7
 }
 
+/** One history entry's elapsed days — from entered_at to exited_at, or to now if
+ * still open. The single "how long was this stint" calc every duration metric
+ * below is built from. */
+export function stintDays(h: HistoryEntry): number {
+  const end = h.exited_at ? new Date(h.exited_at).getTime() : Date.now()
+  return (end - new Date(h.entered_at).getTime()) / 86_400_000
+}
+
 export interface StageSegment {
   status: string
   days: number
@@ -364,7 +372,7 @@ export function buildStageSegments(history: HistoryEntry[], row: DiInitiativeRow
   const seen = new Set<string>()
 
   for (const h of history) {
-    const days = ((h.exited_at ? new Date(h.exited_at).getTime() : Date.now()) - new Date(h.entered_at).getTime()) / 86_400_000
+    const days = stintDays(h)
     const est = stageEstimateDays(row, h.status)
     const over = est != null && days > est ? days - est : 0
     const isOpen = !h.exited_at
@@ -389,10 +397,7 @@ export function buildStageSegments(history: HistoryEntry[], row: DiInitiativeRow
 
 /** Total days elapsed across every stage the initiative has ever been in. */
 export function elapsedDays(history: HistoryEntry[]): number {
-  return history.reduce((sum, h) => {
-    const end = h.exited_at ? new Date(h.exited_at).getTime() : Date.now()
-    return sum + (end - new Date(h.entered_at).getTime()) / 86_400_000
-  }, 0)
+  return history.reduce((sum, h) => sum + stintDays(h), 0)
 }
 
 /** The countdown metric: for the CURRENTLY open stage, how many days remain until
@@ -413,23 +418,49 @@ export function stageCountdown(history: HistoryEntry[], row: DiInitiativeRow): {
  * initiative has no open stage. */
 export function currentStageDays(history: HistoryEntry[]): number | null {
   const open = history.find(h => !h.exited_at)
-  if (!open) return null
-  return (Date.now() - new Date(open.entered_at).getTime()) / 86_400_000
+  return open ? stintDays(open) : null
 }
 
-/** Averages every Awaiting Approval stint (closed or currently open) across all given
- * initiatives — the headline "how long is approval turnaround really taking" number. */
-export function avgApprovalDays(initiatives: { history: HistoryEntry[] }[]): number | null {
-  const durations: number[] = []
+/** Every real work/friction stage worth surfacing in the "what actually eats the
+ * most time" breakdown — the 5-leg pipeline plus the two states that stop work
+ * without advancing it. Backlog/In Queue are excluded: those measure queue wait,
+ * already surfaced via Next Opening/capacity, not pipeline duration. */
+export const DURATION_TRACKED_STATUSES = [...PIPELINE_STAGES, 'Blocked', 'Paused']
+
+export interface StageDurationStat {
+  status: string
+  avgDays: number
+  medianDays: number
+  count: number
+}
+
+/** Every closed-or-still-open stint's elapsed days, bucketed by status, across every
+ * initiative supplied (typically the whole roadmap, not just active rows — a
+ * finished project's history is the most reliable duration data there is). Ranked
+ * by average descending: index 0 is the current biggest bottleneck. Statuses with
+ * zero recorded stints are omitted rather than shown as a false zero. */
+export function stageDurationStats(
+  initiatives: { history: HistoryEntry[] }[],
+  statuses: string[] = DURATION_TRACKED_STATUSES,
+): StageDurationStat[] {
+  const byStatus = new Map<string, number[]>(statuses.map(s => [s, []]))
   for (const init of initiatives) {
     for (const h of init.history) {
-      if (h.status !== 'Awaiting Approval') continue
-      const end = h.exited_at ? new Date(h.exited_at).getTime() : Date.now()
-      durations.push((end - new Date(h.entered_at).getTime()) / 86_400_000)
+      byStatus.get(h.status)?.push(stintDays(h))
     }
   }
-  if (!durations.length) return null
-  return durations.reduce((a, b) => a + b, 0) / durations.length
+  return statuses
+    .map(status => {
+      const durations = byStatus.get(status) ?? []
+      return {
+        status,
+        avgDays: durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
+        medianDays: median(durations),
+        count: durations.length,
+      }
+    })
+    .filter(s => s.count > 0)
+    .sort((a, b) => b.avgDays - a.avgDays)
 }
 
 export function median(nums: number[]): number {

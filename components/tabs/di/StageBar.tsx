@@ -61,11 +61,17 @@ export default function StageBar({ initiative }: Props) {
 
   const labels = segments
     .filter(s => s.kind !== 'todo')
-    .map(s => `${STAGE_LABEL[s.status] ?? s.status}${s.kind === 'now' || s.kind === 'hold' ? '\u00b7now' : ''}`)
+    .map(s => ({
+      key: s.status,
+      text: `${STAGE_LABEL[s.status] ?? s.status} \u00b7 ${Math.round(s.days)}d${s.kind === 'now' || s.kind === 'hold' ? ' \u00b7now' : ''}${s.overDays > 0 ? ` \u00b7 ${Math.round(s.overDays)}d over` : ''}`,
+      title: s.estDays != null
+        ? `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} of ${Math.round(s.estDays)} estimated days`
+        : `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} days`,
+    }))
 
   const currentSeg = segments.find(s => s.kind === 'now' || s.kind === 'hold')
   const ariaLabel = currentSeg
-    ? `Currently in ${STAGE_LABEL[currentSeg.status] ?? currentSeg.status}`
+    ? `Currently in ${STAGE_LABEL[currentSeg.status] ?? currentSeg.status}, ${Math.round(currentSeg.days)} days`
     : segments.length
       ? 'Not yet started'
       : 'No stage history yet'
@@ -78,7 +84,7 @@ export default function StageBar({ initiative }: Props) {
         ))}
       </div>
       <div className="stage-labels">
-        {labels.map((l, idx) => <span key={idx}>{l}</span>)}
+        {labels.map(l => <span key={l.key} title={l.title}>{l.text}</span>)}
       </div>
     </div>
   )

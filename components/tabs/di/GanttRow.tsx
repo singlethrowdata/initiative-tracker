@@ -2,7 +2,8 @@
 
 import { DiInitiative } from '@/types'
 import StageBar from './StageBar'
-import { IN_FLIGHT_STATUSES } from '@/lib/di-scheduling'
+import { IN_FLIGHT_STATUSES, stintDays, stageEstimateDays, stageCountdown } from '@/lib/di-scheduling'
+import { stageAgeClass } from '@/lib/ui'
 
 const BLOCKER_LABEL: Record<string, string> = {
   internal_capacity: 'internal capacity',
@@ -27,12 +28,13 @@ interface Props {
   onEdit: () => void
   onChangeStage: () => void
   onNotes: () => void
+  onHistory: () => void
 }
 
 /** One row of the Active Gantt. No drag-handle here — reordering is only defined
  * for the Queued backlog list (lexicon.md "Queue Order"); Active rows have no
  * specified drag behavior in the approved mockup, so it's omitted. */
-export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, onNotes }: Props) {
+export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, onNotes, onHistory }: Props) {
   const open = initiative.history.find(h => !h.exited_at)
   const varianceWeeks = initiative.variance_weeks
   const varianceLabel = varianceWeeks == null
@@ -40,6 +42,14 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, 
     : varianceWeeks > 0 ? `+${varianceWeeks.toFixed(1)}wk` : 'on track'
   const varianceClass = varianceWeeks != null && varianceWeeks > 0 ? 'behind' : 'ontrack'
   const avatarBg = initiative.architect === 'Darian Ward' ? 'var(--grad-warm)' : 'var(--grad)'
+  const curDays = open ? stintDays(open) : null
+  const rawEst = open ? stageEstimateDays(initiative, open.status) : null
+  const estDays = rawEst && rawEst > 0 ? rawEst : null
+  const countdown = open ? stageCountdown(initiative.history, initiative) : null
+  const ageClass = estDays != null && countdown ? stageAgeClass(curDays ?? 0, estDays * 0.7, estDays) : 'days-badge days-neutral'
+  const ageLabel = curDays == null ? null : estDays != null
+    ? `${Math.round(curDays)}d in ${open!.status} (est ${Math.round(estDays)}d)`
+    : `${Math.round(curDays)}d in ${open!.status}`
 
   return (
     <div
@@ -71,6 +81,7 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, 
           {IN_FLIGHT_STATUSES.includes(initiative.status) && initiative.architect && (
             <span className="waiting-note">architect: <b>{initiative.architect}</b></span>
           )}
+          {ageLabel && <span className={ageClass}>{ageLabel}</span>}
         </div>
         {initiative.status === 'Blocked' && (
           <p className="waiting-note">
@@ -81,6 +92,9 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, 
           <p className="waiting-note">note: <b>{initiative.status_note}</b></p>
         )}
         <div className="gantt-actions">
+          <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onHistory() }}>
+            History &#8250;
+          </button>
           <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onNotes() }}>
             Notes &#8250;
           </button>

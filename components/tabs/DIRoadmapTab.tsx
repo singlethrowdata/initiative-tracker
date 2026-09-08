@@ -5,12 +5,14 @@ import { DiInitiative } from '@/types'
 import { QUEUED_STATUSES } from '@/lib/di-scheduling'
 import CapacityChip from '@/components/tabs/di/CapacityChip'
 import NextOpeningCard from '@/components/tabs/di/NextOpeningCard'
+import StageDurationCard from '@/components/tabs/di/StageDurationCard'
 import GanttRow from '@/components/tabs/di/GanttRow'
 import QueueRow from '@/components/tabs/di/QueueRow'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
 import ChangeStageModal from '@/components/modals/ChangeStageModal'
 import DiNotesModal from '@/components/modals/DiNotesModal'
+import StageHistoryModal from '@/components/modals/StageHistoryModal'
 
 interface SizeEntry { startsInWeeks: number; finishesInWeeks: number }
 interface Capacity {
@@ -34,6 +36,7 @@ export default function DIRoadmapTab() {
   const [editTarget, setEditTarget] = useState<DiInitiative | null>(null)
   const [stageTarget, setStageTarget] = useState<DiInitiative | null>(null)
   const [notesTarget, setNotesTarget] = useState<DiInitiative | null>(null)
+  const [historyTarget, setHistoryTarget] = useState<DiInitiative | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
   const [queueOrder, setQueueOrder] = useState<string[]>([])
 
@@ -112,6 +115,7 @@ export default function DIRoadmapTab() {
         </div>
 
         {capacity && <NextOpeningCard nextOpeningBySize={capacity.nextOpeningBySize} />}
+        <StageDurationCard initiatives={initiatives} />
 
         <div className="section-h">
           <h2>Active</h2>
@@ -134,7 +138,7 @@ export default function DIRoadmapTab() {
               <div className="empty"><p>No active projects.</p></div>
             ) : (
               activeRows.map(row => (
-                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} onChangeStage={() => setStageTarget(row)} onNotes={() => setNotesTarget(row)} />
+                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} onChangeStage={() => setStageTarget(row)} onNotes={() => setNotesTarget(row)} onHistory={() => setHistoryTarget(row)} />
               ))
             )}
           </div>
@@ -166,6 +170,7 @@ export default function DIRoadmapTab() {
                 onDragEnd={() => setDragId(null)}
                 onChangeStage={() => setStageTarget(row)}
                 onNotes={() => setNotesTarget(row)}
+                onHistory={() => setHistoryTarget(row)}
               />
             ))
           )}
@@ -200,6 +205,13 @@ export default function DIRoadmapTab() {
           initiative={notesTarget}
           isDiTeam={isDiTeam}
           onClose={() => setNotesTarget(null)}
+        />
+      )}
+
+      {historyTarget && (
+        <StageHistoryModal
+          initiative={historyTarget}
+          onClose={() => setHistoryTarget(null)}
         />
       )}
     </>
