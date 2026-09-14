@@ -12,11 +12,11 @@ One phase of building a D+I Roadmap project: Design, Build, QA, Awaiting Approva
 
 ## Capacity Budget
 The combined weekly bandwidth (in person-weeks, currently ~1.5) that the two D+I team members have available for builds, shared as one pool rather than split per person. Powers the "Next opening" ETA and per-project target dates.
-**Not to be confused with:** WIP Cap — a separate, simpler concurrency limit (see below). The old per-owner WIP cap model (fixed in-flight slot count assigned to each person individually) that Capacity Budget itself replaced is gone entirely; WIP Cap is a new, distinct concept, not a return to that model — it's shared, not per-person.
+**Not to be confused with:** WIP Cap — a separate, simpler concurrency limit (see below). Capacity Budget stays a shared pool; WIP Cap, by contrast, is per-owner (ADR-0006) — the two aren't the same shape, don't conflate them.
 
 ## WIP Cap
-The hard limit (currently 5, shared, not per-person) on how many D+I Roadmap projects can be in the Design, Build, or Deploy stage at once — "how many things we can actually be working on at a time." A project in QA, Awaiting Approval, or Blocked ("waiting on someone else") doesn't count against it, even though it's still shown as active on the Gantt and still has a real target date. Informational, not a hard gate — going over is a health signal, not a block on starting new work (same philosophy as Capacity Budget).
-**Not to be confused with:** Capacity Budget — WIP Cap answers "how many projects are we touching right now," Capacity Budget answers "how fast is the backlog draining." They're tracked and displayed separately.
+The hard limit (currently 5, per owner — ADR-0006, correcting ADR-0004's original shared-pool version) on how many D+I Roadmap projects a given owner can have in the Design, Build, or Deploy stage at once — "how many things this person is actually building at a time." Grouped by Owner (who's currently building it, per the Owner vs Architect entry below), not Architect. A project in QA, Awaiting Approval, or Blocked ("waiting on someone else") doesn't count against it, even though it's still shown as active on the Gantt and still has a real target date. Informational, not a hard gate — going over is a health signal, not a block on starting new work (same philosophy as Capacity Budget). Shown as one chip per owner (e.g. "Darian Ward: 5 / 5", "Charles Blain: 3 / 5"), not one team-wide number.
+**Not to be confused with:** Capacity Budget — WIP Cap answers "how many projects is this owner touching right now," Capacity Budget answers "how fast is the whole team's backlog draining." They're tracked and displayed separately.
 
 ## In-Flight
 A project is In-Flight — and draws down the WIP Cap — only while in the Design, Build, or Deploy stage. QA, Awaiting Approval, Blocked, and Paused don't draw down the WIP Cap because no one is actively building on them right now, even though QA/Awaiting Approval/Blocked still count toward Capacity Budget's target-date math (that project still has real calendar time riding on it).
@@ -35,7 +35,7 @@ The sequence backlog projects will be worked in. Defaults to descending RICE Sco
 Reach/Impact/Confidence/Effort scoring per project. Drives the default Queue Order; also the answer to "impact" in the original ask.
 
 ## Owner vs Architect
-Two distinct people-roles on a D+I Roadmap project: Architect designed/spec'd it, Owner is currently building it. They can differ per project. Neither role drives Capacity Budget allocation — capacity is shared, not assigned per person.
+Two distinct people-roles on a D+I Roadmap project: Architect designed/spec'd it, Owner is currently building it. They can differ per project. Neither role drives Capacity Budget allocation — capacity is shared, not assigned per person. WIP Cap (ADR-0006) is the exception: it's grouped by Owner specifically, because Owner is the field that means "currently building."
 
 ## Variance
 How far a project's current progress is from its Buffered Estimate target date. Shown as a Gantt bar length/position vs. today per project, and rolled up into one team-wide headline number (e.g. "3.2 weeks behind across active projects").

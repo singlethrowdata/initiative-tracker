@@ -216,12 +216,12 @@ export interface DiInitiative {
   rice_score: number | null
   target_date: string | null
   variance_weeks: number | null
-  starts_in_weeks: number | null
+  finishes_in_weeks: number | null
 }
 
 export interface DiConfig {
   capacity_budget_weeks: number
-  wip_cap: number
+  wip_cap_per_owner: number
   size_presets: Record<string, { design: number; build: number; qa: number; approval: number; deploy: number }>
   team_emails: string[]
 }

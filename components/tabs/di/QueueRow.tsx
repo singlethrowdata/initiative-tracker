@@ -44,7 +44,7 @@ export default function QueueRow({ initiative, rank, isDiTeam, dragging, onDragS
       <span className="queue-rice">RICE {initiative.rice_score != null ? Math.round(initiative.rice_score) : '\u2014'}</span>
       {queuedDays != null && <span className="days-badge days-neutral">{queuedDays}d in {open!.status}</span>}
       <span className="queue-eta">
-        {initiative.starts_in_weeks != null ? `starts in ~${initiative.starts_in_weeks.toFixed(1)} wks` : 'starts in \u2014'}
+        {initiative.finishes_in_weeks != null ? `completes in ~${initiative.finishes_in_weeks.toFixed(1)} wks` : 'completes in \u2014'}
       </span>
       <button className="edit-link" type="button" onClick={onHistory}>
         History &#8250;

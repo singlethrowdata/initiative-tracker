@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-interface SizeEntry { startsInWeeks: number; finishesInWeeks: number }
+interface SizeEntry { finishesInWeeks: number }
 
 interface Props {
   nextOpeningBySize: Record<'Small' | 'Medium' | 'Large', SizeEntry>
@@ -25,8 +25,7 @@ export default function NextOpeningCard({ nextOpeningBySize }: Props) {
     <section className="next-opening" aria-labelledby="next-opening-h">
       <div className="next-opening-label" id="next-opening-h">Next opening</div>
       <p className="next-opening-copy">
-        A new <b>{size}</b> project requested today would start{' '}
-        <b>{entry ? `~${entry.startsInWeeks.toFixed(1)} wks` : '\u2014'}</b> from now and finish{' '}
+        A new <b>{size}</b> project requested today would be estimated to complete{' '}
         <b>{entry ? `~${entry.finishesInWeeks.toFixed(1)} wks` : '\u2014'}</b> from now.
       </p>
       <div className="size-picker" role="group" aria-label="Estimate for a different size">

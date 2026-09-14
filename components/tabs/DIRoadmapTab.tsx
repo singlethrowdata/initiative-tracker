@@ -5,7 +5,6 @@ import { DiInitiative } from '@/types'
 import { QUEUED_STATUSES } from '@/lib/di-scheduling'
 import CapacityChip from '@/components/tabs/di/CapacityChip'
 import NextOpeningCard from '@/components/tabs/di/NextOpeningCard'
-import StageDurationCard from '@/components/tabs/di/StageDurationCard'
 import GanttRow from '@/components/tabs/di/GanttRow'
 import QueueRow from '@/components/tabs/di/QueueRow'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
@@ -14,10 +13,10 @@ import ChangeStageModal from '@/components/modals/ChangeStageModal'
 import DiNotesModal from '@/components/modals/DiNotesModal'
 import StageHistoryModal from '@/components/modals/StageHistoryModal'
 
-interface SizeEntry { startsInWeeks: number; finishesInWeeks: number }
+interface SizeEntry { finishesInWeeks: number }
 interface Capacity {
-  currentDrawCount: number
-  wipCap: number
+  wipCapPerOwner: number
+  drawByOwner: { owner: string; count: number }[]
   nextOpeningBySize: Record<'Small' | 'Medium' | 'Large', SizeEntry>
 }
 
@@ -110,12 +109,11 @@ export default function DIRoadmapTab() {
         <div className="page-head">
           <h1>D+I Roadmap</h1>
           {capacity && (
-            <CapacityChip currentDrawCount={capacity.currentDrawCount} wipCap={capacity.wipCap} />
+            <CapacityChip drawByOwner={capacity.drawByOwner} wipCapPerOwner={capacity.wipCapPerOwner} />
           )}
         </div>
 
         {capacity && <NextOpeningCard nextOpeningBySize={capacity.nextOpeningBySize} />}
-        <StageDurationCard initiatives={initiatives} />
 
         <div className="section-h">
           <h2>Active</h2>

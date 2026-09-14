@@ -6,13 +6,13 @@ import {
   DEFAULT_CAPACITY_BUDGET_WEEKS,
   DEFAULT_SIZE_PRESETS,
   DEFAULT_TEAM_EMAILS,
-  DEFAULT_WIP_CAP,
+  DEFAULT_WIP_CAP_PER_OWNER,
   SizePreset,
 } from './di-scheduling'
 
 export interface ResolvedDiConfig {
   capacityBudgetWeeks: number
-  wipCap: number
+  wipCapPerOwner: number
   sizePresets: Record<string, SizePreset>
   teamEmails: string[]
 }
@@ -37,15 +37,15 @@ export async function getDiConfig(): Promise<ResolvedDiConfig> {
     return Number.isFinite(n) && n > 0 ? n : DEFAULT_CAPACITY_BUDGET_WEEKS
   })()
 
-  const wipCap = (() => {
-    const n = parseJson<number>(byKey.get('wip_cap'), DEFAULT_WIP_CAP)
-    return Number.isFinite(n) && n > 0 ? n : DEFAULT_WIP_CAP
+  const wipCapPerOwner = (() => {
+    const n = parseJson<number>(byKey.get('wip_cap_per_owner'), DEFAULT_WIP_CAP_PER_OWNER)
+    return Number.isFinite(n) && n > 0 ? n : DEFAULT_WIP_CAP_PER_OWNER
   })()
 
   const sizePresets = parseJson<Record<string, SizePreset>>(byKey.get('size_presets'), DEFAULT_SIZE_PRESETS)
   const teamEmails = parseJson<string[]>(byKey.get('team_emails'), DEFAULT_TEAM_EMAILS)
 
-  return { capacityBudgetWeeks, wipCap, sizePresets, teamEmails }
+  return { capacityBudgetWeeks, wipCapPerOwner, sizePresets, teamEmails }
 }
 
 /** ADR-0002: the two D+I team members get full create/edit; everyone else is read-only. */

@@ -114,7 +114,7 @@ function toDiInitiative(row: RawInitiativeRow, capacityView: CapacityView, histo
     rice_score: calcRiceScore(row),
     target_date: computed?.target_date ?? null,
     variance_weeks: computed?.variance_weeks ?? null,
-    starts_in_weeks: computed?.starts_in_weeks ?? null,
+    finishes_in_weeks: computed?.finishes_in_weeks ?? null,
   }
 }
 
@@ -136,11 +136,11 @@ export async function GET() {
   ])
 
   const historyByInitiative = groupHistoryByInitiative(rawHistory)
-  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.capacityBudgetWeeks, config.wipCap)
+  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.capacityBudgetWeeks, config.wipCapPerOwner)
 
   const initiatives = rawRows.map(row => toDiInitiative(row, capacityView, historyByInitiative.get(row.id) ?? []))
 
-  const nextOpeningBySize: Record<string, { startsInWeeks: number; finishesInWeeks: number }> = {}
+  const nextOpeningBySize: Record<string, { finishesInWeeks: number }> = {}
   for (const [name, preset] of Object.entries(config.sizePresets)) {
     if (name === 'Custom') continue
     nextOpeningBySize[name] = capacityView.nextOpening(preset)
@@ -149,8 +149,8 @@ export async function GET() {
   return NextResponse.json({
     initiatives,
     capacity: {
-      currentDrawCount: capacityView.currentDrawCount,
-      wipCap: capacityView.wipCap,
+      wipCapPerOwner: capacityView.wipCapPerOwner,
+      drawByOwner: capacityView.drawByOwner,
       nextOpeningBySize,
     },
     isDiTeam,
@@ -189,6 +189,7 @@ export async function POST(req: Request) {
   const newRiceScore = calcRiceScore({
     id: 'new',
     status: 'Backlog',
+    owner: '',
     date_start: null,
     queue_position: null,
     rice_r: body.rice_r ?? null,

@@ -119,7 +119,7 @@ function toDiInitiative(row: RawInitiativeRow, capacityView: CapacityView, histo
     rice_score: calcRiceScore(row),
     target_date: computed?.target_date ?? null,
     variance_weeks: computed?.variance_weeks ?? null,
-    starts_in_weeks: computed?.starts_in_weeks ?? null,
+    finishes_in_weeks: computed?.finishes_in_weeks ?? null,
   }
 }
 
@@ -174,7 +174,7 @@ export async function GET(_req: Request, { params }: Params) {
   if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const historyByInitiative = groupHistoryByInitiative(rawHistory)
-  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.capacityBudgetWeeks, config.wipCap)
+  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.capacityBudgetWeeks, config.wipCapPerOwner)
   const initiative = toDiInitiative(row, capacityView, historyByInitiative.get(id) ?? [])
 
   return NextResponse.json({ initiative, updates })

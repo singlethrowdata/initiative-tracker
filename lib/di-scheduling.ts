@@ -57,15 +57,20 @@ export const ACTIVE_STATUSES: string[] = [...PIPELINE_STAGES]
 // RICE-effort math (ADR-0001: Awaiting Approval, Blocked, and Paused don't consume it).
 export const IN_FLIGHT_STATUSES: string[] = ['Design', 'Build', 'QA', 'Deploy']
 
-// The narrower-still set that occupies one of the team's shared concurrent work
-// slots (ADR-0004: "can only work on N projects at a time"). QA, Awaiting Approval,
-// Blocked, and Paused are still real calendar time for the project (they still show
-// on the Gantt and still count for target-date math above) but don't tie up a
-// person's active build bandwidth, so they don't draw down the WIP cap.
+// The narrower-still set that occupies one of a person's concurrent work slots
+// (ADR-0004, corrected by ADR-0006: "each owner can only work on N projects at a
+// time" — a per-person limit, not a shared team-wide one. Grouped by Owner, per
+// lexicon.md's "Owner is currently building it" — not Architect, who designed/
+// spec'd the project but isn't necessarily who's occupying the build slot).
+// QA, Awaiting Approval, Blocked, and Paused are still real calendar time for the
+// project (they still show on the Gantt and still count for target-date math
+// above) but don't tie up a person's active build bandwidth, so they don't draw
+// down the WIP cap.
 export const WIP_CAP_STATUSES: string[] = ['Design', 'Build', 'Deploy']
 
-// Default shared WIP cap — config-driven via di_config.wip_cap, not hardcoded.
-export const DEFAULT_WIP_CAP = 5
+// Default per-owner WIP cap — config-driven via di_config.wip_cap_per_owner, not
+// hardcoded (ADR-0006).
+export const DEFAULT_WIP_CAP_PER_OWNER = 5
 
 export const QUEUED_STATUSES: string[] = ['Backlog', 'In Queue']
 
@@ -76,6 +81,7 @@ export const BOARD_STATUSES: string[] = ['Backlog', ...ACTIVE_PIPELINE_STATUSES]
 export interface DiInitiativeRow {
   id: string
   status: string
+  owner: string
   date_start: string | null
   queue_position: number | null
   rice_r: number | string | null
@@ -248,15 +254,15 @@ function currentStageTarget(targets: PhaseTargets, stage: string | null): Date |
 }
 
 export interface CapacityView {
-  currentDrawCount: number
-  wipCap: number
+  wipCapPerOwner: number
+  drawByOwner: { owner: string; count: number }[]
   perItem: Map<string, {
     in_flight: boolean
     target_date: string | null
     variance_weeks: number | null
-    starts_in_weeks: number | null
+    finishes_in_weeks: number | null
   }>
-  nextOpening: (preset: SizePreset) => { startsInWeeks: number; finishesInWeeks: number }
+  nextOpening: (preset: SizePreset) => { finishesInWeeks: number }
 }
 
 /** ADR-0003: target dates and the "next opening" ETA still model the team as a
@@ -266,20 +272,30 @@ export interface CapacityView {
  * queue_position order. Dividing cumulative ahead-weeks by the budget gives
  * calendar weeks until a slot opens.
  *
- * ADR-0004: `currentDrawCount` / `wipCap` is a separate, simpler number — a hard
- * count of projects in a WIP_CAP_STATUSES stage right now, compared against the
- * shared "can only work on N at a time" limit. It does not feed the ETA math. */
+ * ADR-0004, corrected by ADR-0006: `drawByOwner` / `wipCapPerOwner` is a separate,
+ * simpler number — for each Owner (lexicon.md: "Owner is currently building it"),
+ * a hard count of their projects in a WIP_CAP_STATUSES stage right now, compared
+ * against that owner's own "can only work on N at a time" limit. It does not feed
+ * the ETA math. */
 export function computeCapacityView(
   rows: DiInitiativeRow[],
   historyByRow: Map<string, HistoryEntry[]>,
   capacityBudgetWeeks: number,
-  wipCap: number,
+  wipCapPerOwner: number,
   today: Date = new Date(),
 ): CapacityView {
   const t = midnight(today)
   const perItem: CapacityView['perItem'] = new Map()
 
-  const currentDrawCount = rows.filter(r => WIP_CAP_STATUSES.includes(r.status)).length
+  const drawCounts = new Map<string, number>()
+  for (const r of rows) {
+    if (!WIP_CAP_STATUSES.includes(r.status)) continue
+    const owner = r.owner?.trim() || 'Unassigned'
+    drawCounts.set(owner, (drawCounts.get(owner) ?? 0) + 1)
+  }
+  const drawByOwner = [...drawCounts.entries()]
+    .map(([owner, count]) => ({ owner, count }))
+    .sort((a, b) => b.count - a.count || a.owner.localeCompare(b.owner))
 
   const startedStatuses = [...PIPELINE_STAGES, 'Blocked', 'Paused']
   const startedRows = rows.filter(r => startedStatuses.includes(r.status))
@@ -298,7 +314,7 @@ export function computeCapacityView(
       in_flight: WIP_CAP_STATUSES.includes(r.status),
       target_date: targetDate ? targetDate.toISOString() : null,
       variance_weeks: varianceWeeks,
-      starts_in_weeks: null,
+      finishes_in_weeks: null,
     })
   }
 
@@ -309,21 +325,27 @@ export function computeCapacityView(
 
   let cumulative = startedAheadWeeks
   for (const r of queuedRows) {
-    const startsInWeeks = capacityBudgetWeeks > 0 ? round1(cumulative / capacityBudgetWeeks) : 0
-    perItem.set(r.id, { in_flight: false, target_date: null, variance_weeks: null, starts_in_weeks: startsInWeeks })
+    const startsInWeeks = capacityBudgetWeeks > 0 ? cumulative / capacityBudgetWeeks : 0
+    const ownWeeks = fullInFlightWeeks(r) + bufferedStageWeeks(r, 'Awaiting Approval')
+    perItem.set(r.id, {
+      in_flight: false,
+      target_date: null,
+      variance_weeks: null,
+      finishes_in_weeks: round1(startsInWeeks + ownWeeks),
+    })
     cumulative += fullInFlightWeeks(r)
   }
   const backlogClearedWeeks = cumulative
 
   return {
-    currentDrawCount,
-    wipCap,
+    wipCapPerOwner,
+    drawByOwner,
     perItem,
     nextOpening: (preset: SizePreset) => {
-      const startsInWeeks = capacityBudgetWeeks > 0 ? round1(backlogClearedWeeks / capacityBudgetWeeks) : 0
+      const startsInWeeks = capacityBudgetWeeks > 0 ? backlogClearedWeeks / capacityBudgetWeeks : 0
       const ownWeeks = (preset.design + preset.build + preset.qa + preset.deploy) * ESTIMATE_BUFFER
       const approvalWeeks = preset.approval * ESTIMATE_BUFFER
-      return { startsInWeeks, finishesInWeeks: round1(startsInWeeks + ownWeeks + approvalWeeks) }
+      return { finishesInWeeks: round1(startsInWeeks + ownWeeks + approvalWeeks) }
     },
   }
 }
@@ -419,54 +441,6 @@ export function stageCountdown(history: HistoryEntry[], row: DiInitiativeRow): {
 export function currentStageDays(history: HistoryEntry[]): number | null {
   const open = history.find(h => !h.exited_at)
   return open ? stintDays(open) : null
-}
-
-/** Every real work/friction stage worth surfacing in the "what actually eats the
- * most time" breakdown — the 5-leg pipeline plus the two states that stop work
- * without advancing it. Backlog/In Queue are excluded: those measure queue wait,
- * already surfaced via Next Opening/capacity, not pipeline duration. */
-export const DURATION_TRACKED_STATUSES = [...PIPELINE_STAGES, 'Blocked', 'Paused']
-
-export interface StageDurationStat {
-  status: string
-  avgDays: number
-  medianDays: number
-  count: number
-}
-
-/** Every closed-or-still-open stint's elapsed days, bucketed by status, across every
- * initiative supplied (typically the whole roadmap, not just active rows — a
- * finished project's history is the most reliable duration data there is). Ranked
- * by average descending: index 0 is the current biggest bottleneck. Statuses with
- * zero recorded stints are omitted rather than shown as a false zero. */
-export function stageDurationStats(
-  initiatives: { history: HistoryEntry[] }[],
-  statuses: string[] = DURATION_TRACKED_STATUSES,
-): StageDurationStat[] {
-  const byStatus = new Map<string, number[]>(statuses.map(s => [s, []]))
-  for (const init of initiatives) {
-    for (const h of init.history) {
-      byStatus.get(h.status)?.push(stintDays(h))
-    }
-  }
-  return statuses
-    .map(status => {
-      const durations = byStatus.get(status) ?? []
-      return {
-        status,
-        avgDays: durations.length ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
-        medianDays: median(durations),
-        count: durations.length,
-      }
-    })
-    .filter(s => s.count > 0)
-    .sort((a, b) => b.avgDays - a.avgDays)
-}
-
-export function median(nums: number[]): number {
-  if (!nums.length) return 0
-  const sorted = [...nums].sort((a, b) => a - b)
-  return sorted[Math.floor(sorted.length / 2)]
 }
 
 /** Same condition the old Scheduler.gs used: only the Deploy Target is ever compared
