@@ -131,7 +131,6 @@ export default function DIRoadmapTab() {
             <span className="lbl">Project</span>
             <span className="lbl">Timeline</span>
             <span className="lbl" style={{ textAlign: 'right' }}>Variance</span>
-            <span className="today-lbl">Today</span>
           </div>
           <div className="gantt-rows">
             {activeRows.length === 0 ? (
