@@ -7,6 +7,7 @@ import CapacityChip from '@/components/tabs/di/CapacityChip'
 import NextOpeningCard from '@/components/tabs/di/NextOpeningCard'
 import GanttRow from '@/components/tabs/di/GanttRow'
 import QueueRow from '@/components/tabs/di/QueueRow'
+import CompletedRow from '@/components/tabs/di/CompletedRow'
 import CreateDIInitiativeModal from '@/components/modals/CreateDIInitiativeModal'
 import EditDIInitiativeModal from '@/components/modals/EditDIInitiativeModal'
 import ChangeStageModal from '@/components/modals/ChangeStageModal'
@@ -38,6 +39,7 @@ export default function DIRoadmapTab() {
   const [historyTarget, setHistoryTarget] = useState<DiInitiative | null>(null)
   const [dragId, setDragId] = useState<string | null>(null)
   const [queueOrder, setQueueOrder] = useState<string[]>([])
+  const [completedExpanded, setCompletedExpanded] = useState(false)
 
   const load = useCallback(async () => {
     const res = await fetch('/api/di-initiatives')
@@ -57,6 +59,11 @@ export default function DIRoadmapTab() {
     .filter(i => QUEUED_STATUSES.includes(i.status))
     .slice()
     .sort((a, b) => (a.queue_position ?? Infinity) - (b.queue_position ?? Infinity))
+
+  const completedRowsSorted = initiatives
+    .filter(i => i.status === 'Done')
+    .slice()
+    .sort((a, b) => (b.date_completed ?? '').localeCompare(a.date_completed ?? ''))
 
   // Local drag order is seeded from the server order whenever the underlying data
   // changes (e.g. after a refetch), then diverges locally while a drag is in
@@ -172,6 +179,32 @@ export default function DIRoadmapTab() {
             ))
           )}
         </div>
+
+        <button
+          className="resolved-section-toggle"
+          type="button"
+          onClick={() => setCompletedExpanded(v => !v)}
+        >
+          <svg viewBox="0 0 24 24" style={{ width: 14, height: 14, transition: 'transform .2s', transform: completedExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}><path d="M6 9l6 6 6-6" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none" /></svg>
+          Completed
+          <span className="resolved-section-count">{completedRowsSorted.length}</span>
+        </button>
+        {completedExpanded && (
+          <div className="queue-list">
+            {completedRowsSorted.length === 0 ? (
+              <div className="empty"><p>No completed projects yet.</p></div>
+            ) : (
+              completedRowsSorted.map(row => (
+                <CompletedRow
+                  key={row.id}
+                  initiative={row}
+                  onNotes={() => setNotesTarget(row)}
+                  onHistory={() => setHistoryTarget(row)}
+                />
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {showCreate && (
