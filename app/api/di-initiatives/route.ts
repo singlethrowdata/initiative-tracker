@@ -49,6 +49,7 @@ type RawHistoryRow = {
   blocker_note: string | null
   set_by_email: string
   set_by_name: string
+  is_estimated: boolean
 }
 
 function groupHistoryByInitiative(rows: RawHistoryRow[]): Map<string, RawHistoryRow[]> {
@@ -71,6 +72,7 @@ function toDiStatusHistoryEntry(row: RawHistoryRow): DiStatusHistoryEntry {
     blocker_note: row.blocker_note,
     set_by_email: row.set_by_email,
     set_by_name: row.set_by_name,
+    is_estimated: row.is_estimated,
   }
 }
 

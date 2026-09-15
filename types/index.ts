@@ -166,6 +166,7 @@ export interface DiStatusHistoryEntry {
   blocker_note: string | null
   set_by_email?: string
   set_by_name?: string
+  is_estimated?: boolean
 }
 
 export interface DiUpdate {

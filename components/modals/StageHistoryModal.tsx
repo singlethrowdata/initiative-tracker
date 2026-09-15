@@ -67,6 +67,7 @@ export default function StageHistoryModal({ initiative, onClose }: Props) {
                     <td>{Math.round(stintDays(h))}d</td>
                     <td className="ut-desc">
                       {h.status === 'Blocked' && (h.blocker_note || BLOCKER_LABEL[h.blocker_category ?? ''] || 'unspecified')}
+                      {h.is_estimated && <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>estimated &mdash; no tracked data before migration</span>}
                     </td>
                   </tr>
                 ))}

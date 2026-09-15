@@ -93,6 +93,7 @@ export async function GET() {
       created_at TIMESTAMPTZ DEFAULT NOW()
     )
   `
+  await sql`ALTER TABLE di_status_history ADD COLUMN IF NOT EXISTS is_estimated BOOLEAN DEFAULT FALSE`
   await sql`CREATE INDEX IF NOT EXISTS idx_di_status_history_initiative ON di_status_history(di_initiative_id)`
   await sql`CREATE INDEX IF NOT EXISTS idx_di_status_history_open ON di_status_history(di_initiative_id) WHERE exited_at IS NULL`
   await sql`

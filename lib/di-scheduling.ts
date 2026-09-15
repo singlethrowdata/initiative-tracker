@@ -101,6 +101,7 @@ export interface HistoryEntry {
   exited_at: string | null
   blocker_category?: string | null
   blocker_note?: string | null
+  is_estimated?: boolean
 }
 
 const num = (v: number | string | null | undefined): number => {
@@ -383,6 +384,7 @@ export interface StageSegment {
   kind: 'done' | 'now' | 'over' | 'todo' | 'hold'
   estDays: number | null
   overDays: number
+  isEstimated: boolean
 }
 
 /** Builds the ordered segment list for the labeled stage bar: every stage the
@@ -400,7 +402,7 @@ export function buildStageSegments(history: HistoryEntry[], row: DiInitiativeRow
     const isOpen = !h.exited_at
     const held = isOpen && !!h.blocker_category
     const kind: StageSegment['kind'] = held ? 'hold' : over > 0 ? 'over' : isOpen ? 'now' : 'done'
-    segments.push({ status: h.status, days, kind, estDays: est, overDays: over })
+    segments.push({ status: h.status, days, kind, estDays: est, overDays: over, isEstimated: !!h.is_estimated })
     seen.add(h.status)
   }
 
@@ -410,7 +412,7 @@ export function buildStageSegments(history: HistoryEntry[], row: DiInitiativeRow
       const status = ACTIVE_PIPELINE_STATUSES[i]
       if (seen.has(status)) continue
       const est = stageEstimateDays(row, status)
-      segments.push({ status, days: est ?? 0, kind: 'todo', estDays: est, overDays: 0 })
+      segments.push({ status, days: est ?? 0, kind: 'todo', estDays: est, overDays: 0, isEstimated: false })
     }
   }
 

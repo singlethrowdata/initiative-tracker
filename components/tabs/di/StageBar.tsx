@@ -39,13 +39,20 @@ interface Props {
  * mockup's per-row proportional bar. */
 export default function StageBar({ initiative }: Props) {
   const segments = buildStageSegments(initiative.history, initiative)
-  const totalDays = PIPELINE_STAGES.reduce((sum, s) => sum + bufferedStageWeeks(initiative, s) * 7, 0) || 1
+  const estimateDays = PIPELINE_STAGES.reduce((sum, s) => sum + bufferedStageWeeks(initiative, s) * 7, 0)
+  const actualDays = segments.filter(s => s.kind !== 'todo').reduce((sum, s) => sum + s.days, 0)
+  // Width scales to whichever is larger: the project's total estimate, or the real
+  // days already spent. Without the actualDays floor, a badly overrun early stage
+  // (e.g. Design running 2x its estimate) would consume the whole bar and clip the
+  // current stage's segment to zero width — hiding exactly what "over" is meant to
+  // surface. Only the hollow 'todo' preview shrinks once you're already over budget.
+  const totalDays = Math.max(estimateDays, actualDays) || 1
 
   const labelFor = (s: (typeof segments)[number]) => ({
-    text: `${STAGE_LABEL[s.status] ?? s.status} \u00b7 ${Math.round(s.days)}d${s.kind === 'now' || s.kind === 'hold' ? ' \u00b7now' : ''}${s.overDays > 0 ? ` \u00b7 ${Math.round(s.overDays)}d over` : ''}`,
-    title: s.estDays != null
+    text: `${s.isEstimated ? '~' : ''}${STAGE_LABEL[s.status] ?? s.status} \u00b7 ${Math.round(s.days)}d${s.kind === 'now' || s.kind === 'hold' ? ' \u00b7now' : ''}${s.overDays > 0 ? ` \u00b7 ${Math.round(s.overDays)}d over` : ''}`,
+    title: (s.estDays != null
       ? `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} of ${Math.round(s.estDays)} estimated days`
-      : `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} days`,
+      : `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} days`) + (s.isEstimated ? ' (estimated \u2014 no tracked data before the Jul 28 migration)' : ''),
   })
 
   let consumed = 0
