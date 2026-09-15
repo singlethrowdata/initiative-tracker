@@ -6,7 +6,6 @@ import { DiConfig } from '@/types'
 
 function toResponse(config: ResolvedDiConfig): DiConfig {
   return {
-    capacity_budget_weeks: config.capacityBudgetWeeks,
     wip_cap_per_owner: config.wipCapPerOwner,
     size_presets: config.sizePresets,
     team_emails: config.teamEmails,
@@ -28,7 +27,6 @@ export async function PATCH(req: Request) {
 
   const body = await req.json()
   const writes: Array<[string, unknown]> = []
-  if (body.capacity_budget_weeks !== undefined) writes.push(['capacity_budget_weeks', body.capacity_budget_weeks])
   if (body.wip_cap_per_owner !== undefined) writes.push(['wip_cap_per_owner', body.wip_cap_per_owner])
   if (body.size_presets !== undefined) writes.push(['size_presets', body.size_presets])
   if (body.team_emails !== undefined) writes.push(['team_emails', body.team_emails])

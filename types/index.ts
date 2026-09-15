@@ -221,7 +221,6 @@ export interface DiInitiative {
 }
 
 export interface DiConfig {
-  capacity_budget_weeks: number
   wip_cap_per_owner: number
   size_presets: Record<string, { design: number; build: number; qa: number; approval: number; deploy: number }>
   team_emails: string[]

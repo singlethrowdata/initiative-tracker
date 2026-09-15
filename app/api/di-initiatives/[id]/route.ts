@@ -174,7 +174,7 @@ export async function GET(_req: Request, { params }: Params) {
   if (!row) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const historyByInitiative = groupHistoryByInitiative(rawHistory)
-  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.capacityBudgetWeeks, config.wipCapPerOwner)
+  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.wipCapPerOwner)
   const initiative = toDiInitiative(row, capacityView, historyByInitiative.get(id) ?? [])
 
   return NextResponse.json({ initiative, updates })

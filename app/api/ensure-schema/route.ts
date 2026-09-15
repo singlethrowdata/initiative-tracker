@@ -115,12 +115,14 @@ export async function GET() {
   `
   await sql`
     INSERT INTO di_config (key, value) VALUES
-      ('capacity_budget_weeks', '1.5'),
       ('wip_cap_per_owner', '5'),
       ('team_emails', '["cblain@singlethrow.com","dward@singlethrow.com","submissions@singlethrow.com"]'),
       ('size_presets', '{"Small":{"design":1,"build":1,"qa":1,"approval":1,"deploy":0.5},"Medium":{"design":2,"build":3,"qa":2,"approval":1,"deploy":1},"Large":{"design":3,"build":6,"qa":3,"approval":2,"deploy":1}}')
     ON CONFLICT (key) DO NOTHING
   `
+  // ADR-0007: capacity_budget_weeks/the single-server queue model is retired in
+  // favor of per-owner concurrent WIP simulation. Delete the now-orphaned row.
+  await sql`DELETE FROM di_config WHERE key = 'capacity_budget_weeks'`
 
   return NextResponse.json({ ok: true })
 }

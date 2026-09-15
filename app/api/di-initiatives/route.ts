@@ -138,7 +138,7 @@ export async function GET() {
   ])
 
   const historyByInitiative = groupHistoryByInitiative(rawHistory)
-  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.capacityBudgetWeeks, config.wipCapPerOwner)
+  const capacityView = computeCapacityView(rawRows, historyByInitiative, config.wipCapPerOwner)
 
   const initiatives = rawRows.map(row => toDiInitiative(row, capacityView, historyByInitiative.get(row.id) ?? []))
 
@@ -192,6 +192,7 @@ export async function POST(req: Request) {
     id: 'new',
     status: 'Backlog',
     owner: '',
+    priority: body.priority ?? 'Medium',
     date_start: null,
     queue_position: null,
     rice_r: body.rice_r ?? null,

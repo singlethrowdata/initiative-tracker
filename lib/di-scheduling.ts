@@ -1,8 +1,9 @@
 // D+I Roadmap scheduling engine. Stage/row-local math (size presets, the 1.33x
 // under-estimation buffer, RICE, stage-segment/countdown helpers) is ported unchanged
 // from the pre-teardown build (commit 7136787^) per ADR-0001 — that feedback never
-// flagged those as wrong. The cross-project scheduling model is new: capacity is one
-// shared weekly budget (ADR-0001), not a per-owner WIP chain, computed per ADR-0003.
+// flagged those as wrong. The cross-project scheduling model has moved twice since:
+// ADR-0001/0003's one shared weekly budget, then ADR-0006/0007's per-owner concurrent
+// WIP-slot simulation (current) — see computeCapacityView's doc comment.
 
 export const STATUS_VALUES = [
   'Backlog', 'In Queue', 'Design', 'Build', 'QA', 'Awaiting Approval', 'Deploy', 'Done', 'Blocked', 'Paused',
@@ -43,18 +44,16 @@ export type BlockerCategory = typeof BLOCKER_CATEGORIES[number]
 // Seeded into di_config.team_emails so it's editable without a redeploy.
 export const DEFAULT_TEAM_EMAILS = ['cblain@singlethrow.com', 'dward@singlethrow.com', 'submissions@singlethrow.com']
 
-// ADR-0001: combined weekly bandwidth, in person-weeks/week, config-driven.
-export const DEFAULT_CAPACITY_BUDGET_WEEKS = 1.5
-
 // The fixed 5-leg build pipeline, in order. 'Awaiting Approval' sits between QA and
-// Deploy but — per ADR-0001 — doesn't draw the capacity budget.
+// Deploy but — per ADR-0006 — doesn't draw down a WIP slot.
 export const PIPELINE_STAGES = ['Design', 'Build', 'QA', 'Awaiting Approval', 'Deploy']
 
 // Display/timeline set — everything past Backlog/In Queue that isn't Done.
 export const ACTIVE_STATUSES: string[] = [...PIPELINE_STAGES]
 
-// The narrower set that draws down the capacity budget used for target-date and
-// RICE-effort math (ADR-0001: Awaiting Approval, Blocked, and Paused don't consume it).
+// "Actively in the pipeline" for display purposes only (GanttRow's "architect: …"
+// in-flight label) — NOT used for any capacity or effort math. See WIP_CAP_STATUSES
+// below for the set that actually drives capacity/effort accounting (ADR-0006/0007).
 export const IN_FLIGHT_STATUSES: string[] = ['Design', 'Build', 'QA', 'Deploy']
 
 // The narrower-still set that occupies one of a person's concurrent work slots
@@ -65,7 +64,9 @@ export const IN_FLIGHT_STATUSES: string[] = ['Design', 'Build', 'QA', 'Deploy']
 // QA, Awaiting Approval, Blocked, and Paused are still real calendar time for the
 // project (they still show on the Gantt and still count for target-date math
 // above) but don't tie up a person's active build bandwidth, so they don't draw
-// down the WIP cap.
+// down the WIP cap. This same set is also what the per-owner queue-ETA simulation
+// (ADR-0007) treats as "occupying a slot" — QA/Approval never gate when the next
+// queued item can start.
 export const WIP_CAP_STATUSES: string[] = ['Design', 'Build', 'Deploy']
 
 // Default per-owner WIP cap — config-driven via di_config.wip_cap_per_owner, not
@@ -82,6 +83,7 @@ export interface DiInitiativeRow {
   id: string
   status: string
   owner: string
+  priority: string
   date_start: string | null
   queue_position: number | null
   rice_r: number | string | null
@@ -144,20 +146,18 @@ function rawStageWeeks(row: DiInitiativeRow, stage: string): number {
 
 export const bufferedStageWeeks = (row: DiInitiativeRow, stage: string): number => rawStageWeeks(row, stage) * ESTIMATE_BUFFER
 
-/** Buffered Design+Build+QA+Deploy only — the weeks that actually draw the capacity
- * budget while this project is in flight. Excludes Awaiting Approval (ADR-0001). */
+/** Buffered Design+Build+Deploy only — the weeks that actually occupy a WIP slot
+ * (ADR-0006/0007). Excludes QA and Awaiting Approval: neither draws build bandwidth,
+ * so neither gates capacity, effort scoring, or queue-ETA math — they still count as
+ * real calendar time in calcPhaseTargets/the Gantt bar, just not here. */
 export const fullInFlightWeeks = (row: DiInitiativeRow): number =>
-  bufferedStageWeeks(row, 'Design') + bufferedStageWeeks(row, 'Build') + bufferedStageWeeks(row, 'QA') + bufferedStageWeeks(row, 'Deploy')
+  bufferedStageWeeks(row, 'Design') + bufferedStageWeeks(row, 'Build') + bufferedStageWeeks(row, 'Deploy')
 
 /** RICE Score = R * I * (C/100) / E, guarded against divide-by-zero. E excludes
- * approval_wks deliberately — Awaiting Approval doesn't consume the team's working
- * hours (ADR-0001). Uses the padded (bufferedWeeks) figures, not the raw estimate. */
-export function calcRiceE(row: DiInitiativeRow): number {
-  return fullInFlightWeeks(row)
-}
-
+ * QA and approval_wks deliberately — neither consumes the team's working hours
+ * (ADR-0006/0007). Uses the padded (bufferedWeeks) figures, not the raw estimate. */
 export function calcRiceScore(row: DiInitiativeRow): number | null {
-  const e = calcRiceE(row)
+  const e = fullInFlightWeeks(row)
   if (!e) return null
   const r = num(row.rice_r)
   const i = num(row.rice_i)
@@ -195,20 +195,17 @@ function stageEntryElapsedWeeks(history: HistoryEntry[], stage: string): number 
   return totalMs / (7 * 86_400_000)
 }
 
-/** Buffered stage-weeks of work still ahead of this row before it's fully deployed,
- * counting only capacity-drawing stages (ADR-0003). Backlog/In Queue rows (never
- * started) get the full in-flight pipeline; Blocked/Paused rows get the remainder of
- * their last active stage plus every in-flight stage after it. */
-export function aheadInFlightWeeks(row: DiInitiativeRow, history: HistoryEntry[]): number {
+/** Buffered WIP-only weeks (Design/Build/Deploy) still ahead of this row before its
+ * current owner-slot frees — the per-owner queue simulation's building block
+ * (ADR-0007). 0 for anything not currently occupying a WIP_CAP_STATUSES stage; a
+ * not-yet-started queued row's own full duration is `fullInFlightWeeks`, not this. */
+function remainingWipWeeks(row: DiInitiativeRow, history: HistoryEntry[]): number {
   const stage = effectiveStage(row, history)
-  if (stage == null) return fullInFlightWeeks(row)
-
-  const idx = PIPELINE_STAGES.indexOf(stage)
+  if (stage == null || !WIP_CAP_STATUSES.includes(stage)) return 0
+  const idx = WIP_CAP_STATUSES.indexOf(stage)
   const elapsed = stageEntryElapsedWeeks(history, stage)
-  const remainingHere = IN_FLIGHT_STATUSES.includes(stage) ? Math.max(0, bufferedStageWeeks(row, stage) - elapsed) : 0
-  const laterWeeks = PIPELINE_STAGES.slice(idx + 1)
-    .filter(s => IN_FLIGHT_STATUSES.includes(s))
-    .reduce((sum, s) => sum + bufferedStageWeeks(row, s), 0)
+  const remainingHere = Math.max(0, bufferedStageWeeks(row, stage) - elapsed)
+  const laterWeeks = WIP_CAP_STATUSES.slice(idx + 1).reduce((sum, s) => sum + bufferedStageWeeks(row, s), 0)
   return remainingHere + laterWeeks
 }
 
@@ -266,22 +263,50 @@ export interface CapacityView {
   nextOpening: (preset: SizePreset) => { finishesInWeeks: number }
 }
 
-/** ADR-0003: target dates and the "next opening" ETA still model the team as a
- * single-server queue with a known weekly service rate (capacityBudgetWeeks).
- * Already-started work (in-flight, Awaiting Approval, Blocked, Paused) is
- * unconditionally ahead of every queued item; queued items then stack in
- * queue_position order. Dividing cumulative ahead-weeks by the budget gives
- * calendar weeks until a slot opens.
- *
- * ADR-0004, corrected by ADR-0006: `drawByOwner` / `wipCapPerOwner` is a separate,
- * simpler number — for each Owner (lexicon.md: "Owner is currently building it"),
- * a hard count of their projects in a WIP_CAP_STATUSES stage right now, compared
- * against that owner's own "can only work on N at a time" limit. It does not feed
- * the ETA math. */
+const PRIORITY_RANK: Record<string, number> = Object.fromEntries(PRIORITY_VALUES.map((p, i) => [p, i]))
+
+export interface OwnerSlotSim {
+  peek: () => number
+  claim: (duration: number) => number
+}
+
+/** Simulates one owner's WIP slots as a small multi-server queue: `wipCap` slots,
+ * each already-busy one booked until its `inFlightRemainingWeeks` entry, the rest
+ * free at t=0. `claim(duration)` hands the soonest-opening slot to the next queued
+ * item, books it busy until `start + duration`, and returns the claimed start —
+ * so a backlog longer than the current in-flight count still resolves correctly by
+ * cascading through each subsequent hand-off (ADR-0007). `peek` reads the soonest
+ * opening without claiming it, for `nextOpening`'s "whoever's free first" check. */
+function buildOwnerSlotSim(inFlightRemainingWeeks: number[], wipCap: number): OwnerSlotSim {
+  const freeNow = Math.max(0, wipCap - inFlightRemainingWeeks.length)
+  const openings = [...Array(freeNow).fill(0), ...inFlightRemainingWeeks].sort((a, b) => a - b)
+  return {
+    peek: (): number => openings[0] ?? 0,
+    claim: (duration: number): number => {
+      const start = openings.shift() ?? 0
+      const nextOpening = start + duration
+      let i = 0
+      while (i < openings.length && openings[i] < nextOpening) i++
+      openings.splice(i, 0, nextOpening)
+      return start
+    },
+  }
+}
+
+/** ADR-0006/0007: capacity is per-owner concurrent WIP slots (`wipCapPerOwner` each),
+ * not one shared serial budget — the team works multiple projects at once across
+ * both owners, and QA/Awaiting Approval never occupy a slot (`WIP_CAP_STATUSES`).
+ * `drawByOwner` is the live "N / cap" count per owner. `finishes_in_weeks` (queued
+ * rows) and `nextOpening` (a hypothetical new project) both come from simulating
+ * each owner's slot timeline forward: in-flight work frees slots as it finishes its
+ * remaining Design/Build/Deploy time; queued items claim openings in priority order
+ * (then `queue_position`) — a High-priority item jumps ahead of a same-owner
+ * Medium/Low item regardless of drag order, which is the concrete meaning of
+ * "priority can escalate" here; and each claim books a slot, cascading the
+ * simulation through backlogs longer than the current in-flight count. */
 export function computeCapacityView(
   rows: DiInitiativeRow[],
   historyByRow: Map<string, HistoryEntry[]>,
-  capacityBudgetWeeks: number,
   wipCapPerOwner: number,
   today: Date = new Date(),
 ): CapacityView {
@@ -300,16 +325,17 @@ export function computeCapacityView(
 
   const startedStatuses = [...PIPELINE_STAGES, 'Blocked', 'Paused']
   const startedRows = rows.filter(r => startedStatuses.includes(r.status))
-  const startedAheadWeeks = startedRows.reduce(
-    (sum, r) => sum + aheadInFlightWeeks(r, historyByRow.get(r.id) ?? []), 0,
-  )
 
   for (const r of startedRows) {
     const history = historyByRow.get(r.id) ?? []
     const stage = effectiveStage(r, history)
-    const start = r.date_start ? new Date(r.date_start) : t
-    const targets = calcPhaseTargets(start, stage, r)
-    const targetDate = currentStageTarget(targets, stage)
+    // No date_start means the row hasn't actually begun (common for Paused/Blocked
+    // items created straight into those statuses) — there's nothing to measure a
+    // schedule variance against, so leave it null rather than falling back to
+    // "today" (which previously produced a nonsensical "ahead of schedule" number).
+    const targetDate = r.date_start
+      ? currentStageTarget(calcPhaseTargets(new Date(r.date_start), stage, r), stage)
+      : null
     const varianceWeeks = targetDate ? round1((t.getTime() - targetDate.getTime()) / (7 * 86_400_000)) : null
     perItem.set(r.id, {
       in_flight: WIP_CAP_STATUSES.includes(r.status),
@@ -324,29 +350,53 @@ export function computeCapacityView(
     .slice()
     .sort((a, b) => (a.queue_position ?? Infinity) - (b.queue_position ?? Infinity))
 
-  let cumulative = startedAheadWeeks
-  for (const r of queuedRows) {
-    const startsInWeeks = capacityBudgetWeeks > 0 ? cumulative / capacityBudgetWeeks : 0
-    const ownWeeks = fullInFlightWeeks(r) + bufferedStageWeeks(r, 'Awaiting Approval')
-    perItem.set(r.id, {
-      in_flight: false,
-      target_date: null,
-      variance_weeks: null,
-      finishes_in_weeks: round1(startsInWeeks + ownWeeks),
-    })
-    cumulative += fullInFlightWeeks(r)
+  const owners = new Set<string>()
+  for (const r of rows) {
+    if (WIP_CAP_STATUSES.includes(r.status) || QUEUED_STATUSES.includes(r.status)) {
+      owners.add(r.owner?.trim() || 'Unassigned')
+    }
   }
-  const backlogClearedWeeks = cumulative
+  const sims = new Map<string, OwnerSlotSim>()
+  for (const owner of owners) {
+    const inFlight = rows.filter(r => WIP_CAP_STATUSES.includes(r.status) && (r.owner?.trim() || 'Unassigned') === owner)
+    const remaining = inFlight.map(r => remainingWipWeeks(r, historyByRow.get(r.id) ?? []))
+    sims.set(owner, buildOwnerSlotSim(remaining, wipCapPerOwner))
+  }
+
+  const byOwnerQueue = new Map<string, DiInitiativeRow[]>()
+  for (const r of queuedRows) {
+    const owner = r.owner?.trim() || 'Unassigned'
+    const list = byOwnerQueue.get(owner) ?? []
+    list.push(r)
+    byOwnerQueue.set(owner, list)
+  }
+  for (const [owner, list] of byOwnerQueue) {
+    list.sort((a, b) =>
+      (PRIORITY_RANK[a.priority] ?? 1) - (PRIORITY_RANK[b.priority] ?? 1)
+      || (a.queue_position ?? Infinity) - (b.queue_position ?? Infinity))
+    const sim = sims.get(owner) ?? buildOwnerSlotSim([], wipCapPerOwner)
+    for (const r of list) {
+      const wipWeeks = fullInFlightWeeks(r)
+      const startsInWeeks = sim.claim(wipWeeks)
+      const calendarWeeks = wipWeeks + bufferedStageWeeks(r, 'QA') + bufferedStageWeeks(r, 'Awaiting Approval')
+      perItem.set(r.id, {
+        in_flight: false,
+        target_date: null,
+        variance_weeks: null,
+        finishes_in_weeks: round1(startsInWeeks + calendarWeeks),
+      })
+    }
+  }
 
   return {
     wipCapPerOwner,
     drawByOwner,
     perItem,
     nextOpening: (preset: SizePreset) => {
-      const startsInWeeks = capacityBudgetWeeks > 0 ? backlogClearedWeeks / capacityBudgetWeeks : 0
-      const ownWeeks = (preset.design + preset.build + preset.qa + preset.deploy) * ESTIMATE_BUFFER
-      const approvalWeeks = preset.approval * ESTIMATE_BUFFER
-      return { finishesInWeeks: round1(startsInWeeks + ownWeeks + approvalWeeks) }
+      const startsInWeeks = sims.size > 0 ? Math.min(...[...sims.values()].map(s => s.peek())) : 0
+      const wipWeeks = (preset.design + preset.build + preset.deploy) * ESTIMATE_BUFFER
+      const calendarWeeks = wipWeeks + (preset.qa + preset.approval) * ESTIMATE_BUFFER
+      return { finishesInWeeks: round1(startsInWeeks + calendarWeeks) }
     },
   }
 }
