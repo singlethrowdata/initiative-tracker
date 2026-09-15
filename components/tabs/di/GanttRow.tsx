@@ -110,7 +110,10 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, 
           )}
         </div>
       </div>
-      <StageBar initiative={initiative} />
+      <div className="gantt-timeline">
+        {initiative.description && <p className="gantt-summary">{initiative.description}</p>}
+        <StageBar initiative={initiative} />
+      </div>
       <div className={`variance ${varianceClass}`}>{varianceLabel}</div>
     </div>
   )
