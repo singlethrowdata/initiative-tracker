@@ -41,33 +41,33 @@ export default function StageBar({ initiative }: Props) {
   const segments = buildStageSegments(initiative.history, initiative)
   const totalDays = PIPELINE_STAGES.reduce((sum, s) => sum + bufferedStageWeeks(initiative, s) * 7, 0) || 1
 
+  const labelFor = (s: (typeof segments)[number]) => ({
+    text: `${STAGE_LABEL[s.status] ?? s.status} \u00b7 ${Math.round(s.days)}d${s.kind === 'now' || s.kind === 'hold' ? ' \u00b7now' : ''}${s.overDays > 0 ? ` \u00b7 ${Math.round(s.overDays)}d over` : ''}`,
+    title: s.estDays != null
+      ? `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} of ${Math.round(s.estDays)} estimated days`
+      : `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} days`,
+  })
+
   let consumed = 0
-  const bars: { key: string; className: string; widthPct: number }[] = []
+  const bars: { key: string; className: string; widthPct: number; text: string | null; title: string | null }[] = []
   for (const seg of segments) {
     const days = seg.kind === 'todo' ? (seg.estDays ?? 0) : seg.days
     let pct = (days / totalDays) * 100
     if (consumed + pct > 100) pct = Math.max(0, 100 - consumed)
     if (pct <= 0) continue
     consumed += pct
+    const label = seg.kind === 'todo' ? null : labelFor(seg)
     bars.push({
       key: `${seg.status}-${bars.length}`,
       className: SEG_CLASS[seg.status] ?? 'seg-remaining',
       widthPct: pct,
+      text: label?.text ?? null,
+      title: label?.title ?? null,
     })
   }
   if (consumed < 100) {
-    bars.push({ key: 'remaining', className: 'seg-remaining', widthPct: 100 - consumed })
+    bars.push({ key: 'remaining', className: 'seg-remaining', widthPct: 100 - consumed, text: null, title: null })
   }
-
-  const labels = segments
-    .filter(s => s.kind !== 'todo')
-    .map(s => ({
-      key: s.status,
-      text: `${STAGE_LABEL[s.status] ?? s.status} \u00b7 ${Math.round(s.days)}d${s.kind === 'now' || s.kind === 'hold' ? ' \u00b7now' : ''}${s.overDays > 0 ? ` \u00b7 ${Math.round(s.overDays)}d over` : ''}`,
-      title: s.estDays != null
-        ? `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} of ${Math.round(s.estDays)} estimated days`
-        : `${STAGE_LABEL[s.status] ?? s.status}: ${Math.round(s.days)} days`,
-    }))
 
   const currentSeg = segments.find(s => s.kind === 'now' || s.kind === 'hold')
   const ariaLabel = currentSeg
@@ -77,15 +77,12 @@ export default function StageBar({ initiative }: Props) {
       : 'No stage history yet'
 
   return (
-    <div>
-      <div className="gantt-bar" role="img" aria-label={ariaLabel}>
-        {bars.map(b => (
-          <div key={b.key} className={`seg ${b.className}`} style={{ width: `${b.widthPct}%` }} />
-        ))}
-      </div>
-      <div className="stage-labels">
-        {labels.map(l => <span key={l.key} title={l.title}>{l.text}</span>)}
-      </div>
+    <div className="gantt-bar" role="img" aria-label={ariaLabel}>
+      {bars.map(b => (
+        <div key={b.key} className={`seg ${b.className}`} style={{ width: `${b.widthPct}%` }} title={b.title ?? undefined}>
+          {b.text && <span className="seg-label">{b.text}</span>}
+        </div>
+      ))}
     </div>
   )
 }
