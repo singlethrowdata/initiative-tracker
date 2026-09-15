@@ -571,4 +571,4 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
 .queue-row .days-badge{flex-shrink:0}
 
 .gantt-timeline{display:flex;flex-direction:column;gap:.4rem;min-width:0}
-.gantt-summary{font-size:.74rem;color:var(--text-2);line-height:1.5}
+.gantt-summary{font-size:.85rem;color:var(--text-2);line-height:1.6}
