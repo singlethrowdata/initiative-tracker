@@ -142,7 +142,7 @@ export default function DIRoadmapTab() {
               <div className="empty"><p>No active projects.</p></div>
             ) : (
               activeRows.map(row => (
-                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} onChangeStage={() => setStageTarget(row)} onNotes={() => setNotesTarget(row)} onHistory={() => setHistoryTarget(row)} />
+                <GanttRow key={row.id} initiative={row} isDiTeam={isDiTeam} onEdit={() => setEditTarget(row)} onChangeStage={() => setStageTarget(row)} />
               ))
             )}
           </div>

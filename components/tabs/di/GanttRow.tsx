@@ -2,6 +2,8 @@
 
 import { DiInitiative } from '@/types'
 import StageBar from './StageBar'
+import HistoryList from './HistoryList'
+import NotesThread from './NotesThread'
 import { IN_FLIGHT_STATUSES, stintDays, stageEstimateDays, stageCountdown } from '@/lib/di-scheduling'
 import { stageAgeClass } from '@/lib/ui'
 
@@ -27,14 +29,15 @@ interface Props {
   isDiTeam: boolean
   onEdit: () => void
   onChangeStage: () => void
-  onNotes: () => void
-  onHistory: () => void
 }
 
 /** One row of the Active Gantt. No drag-handle here — reordering is only defined
  * for the Queued backlog list (lexicon.md "Queue Order"); Active rows have no
- * specified drag behavior in the approved mockup, so it's omitted. */
-export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, onNotes, onHistory }: Props) {
+ * specified drag behavior in the approved mockup, so it's omitted. Current
+ * stage, full stage history, and full notes render inline below the timeline
+ * (HistoryList/NotesThread) rather than behind History/Notes buttons — those
+ * stay modal-only for the Queued/Completed lists, which have no timeline. */
+export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage }: Props) {
   const open = initiative.history.find(h => !h.exited_at)
   const varianceWeeks = initiative.variance_weeks
   const varianceLabel = varianceWeeks == null
@@ -91,28 +94,28 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage, 
         {initiative.status === 'Paused' && initiative.status_note && (
           <p className="waiting-note">note: <b>{initiative.status_note}</b></p>
         )}
-        <div className="gantt-actions">
-          <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onHistory() }}>
-            History &#8250;
-          </button>
-          <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onNotes() }}>
-            Notes &#8250;
-          </button>
-          {isDiTeam && (
-            <>
-              <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onEdit() }}>
-                Edit details &#8250;
-              </button>
-              <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onChangeStage() }}>
-                Change Stage &#8250;
-              </button>
-            </>
-          )}
-        </div>
+        {isDiTeam && (
+          <div className="gantt-actions">
+            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onEdit() }}>
+              Edit details &#8250;
+            </button>
+            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onChangeStage() }}>
+              Change Stage &#8250;
+            </button>
+          </div>
+        )}
       </div>
       <div className="gantt-timeline">
         {initiative.description && <p className="gantt-summary">{initiative.description}</p>}
         <StageBar initiative={initiative} />
+        <div className="gantt-detail" onClick={e => e.stopPropagation()}>
+          <span className="modal-label">Stage History</span>
+          <HistoryList initiative={initiative} />
+        </div>
+        <div className="gantt-detail" onClick={e => e.stopPropagation()}>
+          <span className="modal-label">Notes</span>
+          <NotesThread initiative={initiative} isDiTeam={isDiTeam} />
+        </div>
       </div>
       <div className={`variance ${varianceClass}`}>{varianceLabel}</div>
     </div>
