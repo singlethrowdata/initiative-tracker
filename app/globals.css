@@ -580,6 +580,7 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
 .note-compose{margin-top:1rem}
 .note-compose textarea{width:100%;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:.7rem .9rem;font-family:var(--font);font-size:.8rem;color:var(--text);margin-bottom:.5rem;resize:vertical;min-height:64px;line-height:1.6;transition:all .2s}
 .note-compose textarea:focus{outline:none;border-color:var(--blue-l);background:var(--bg-w);box-shadow:0 0 0 3px rgba(41,128,185,0.08)}
+.note-compose-actions{display:flex;gap:.5rem}
 
 .completed-row{display:flex;align-items:center;gap:1rem;padding:.8rem 1.25rem;border-bottom:1px solid var(--border)}
 .completed-row:last-child{border-bottom:none}

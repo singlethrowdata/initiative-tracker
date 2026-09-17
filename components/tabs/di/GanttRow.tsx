@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { DiInitiative } from '@/types'
 import StageBar from './StageBar'
 import HistoryList from './HistoryList'
@@ -38,6 +39,7 @@ interface Props {
  * (HistoryList/NotesThread) rather than behind History/Notes buttons — those
  * stay modal-only for the Queued/Completed lists, which have no timeline. */
 export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage }: Props) {
+  const [addingNote, setAddingNote] = useState(false)
   const open = initiative.history.find(h => !h.exited_at)
   const varianceWeeks = initiative.variance_weeks
   const varianceLabel = varianceWeeks == null
@@ -102,6 +104,9 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage }
             <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onChangeStage() }}>
               Change Stage &#8250;
             </button>
+            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); setAddingNote(true) }}>
+              + Add Note
+            </button>
           </div>
         )}
       </div>
@@ -114,7 +119,7 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage }
         </div>
         <div className="gantt-detail" onClick={e => e.stopPropagation()}>
           <span className="modal-label">Notes</span>
-          <NotesThread initiative={initiative} isDiTeam={isDiTeam} />
+          <NotesThread initiative={initiative} isDiTeam={isDiTeam} composing={addingNote} onCloseCompose={() => setAddingNote(false)} />
         </div>
       </div>
       <div className={`variance ${varianceClass}`}>{varianceLabel}</div>

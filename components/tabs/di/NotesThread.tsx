@@ -7,6 +7,12 @@ import { initials, fmtRelative } from '@/lib/ui'
 interface Props {
   initiative: DiInitiative
   isDiTeam: boolean
+  /** Whether the compose box is open. Owned by the caller so its trigger button
+   * can live wherever makes sense for that layout — e.g. GanttRow puts "+ Add
+   * Note" next to Edit details / Change Stage, DiNotesModal puts it in the
+   * modal body. */
+  composing: boolean
+  onCloseCompose: () => void
 }
 
 /** A running, timestamped note log per D+I project — the "why is this blocked,
@@ -20,7 +26,7 @@ interface Props {
  * Shared by DiNotesModal (Queued/Completed rows, which have no timeline) and
  * GanttRow's inline detail panel (Active rows) — one source of truth for the
  * fetch/compose/list logic so there's exactly one place di_updates is wired up. */
-export default function NotesThread({ initiative, isDiTeam }: Props) {
+export default function NotesThread({ initiative, isDiTeam, composing, onCloseCompose }: Props) {
   const [notes, setNotes] = useState<DiUpdate[]>([])
   const [loading, setLoading] = useState(true)
   const [draft, setDraft] = useState('')
@@ -49,6 +55,13 @@ export default function NotesThread({ initiative, isDiTeam }: Props) {
     setNotes(prev => [created, ...prev])
     setDraft('')
     setPosting(false)
+    onCloseCompose()
+  }
+
+  function handleCancel() {
+    setDraft('')
+    setError('')
+    onCloseCompose()
   }
 
   return (
@@ -72,7 +85,7 @@ export default function NotesThread({ initiative, isDiTeam }: Props) {
         </div>
       )}
 
-      {isDiTeam && (
+      {isDiTeam && composing && (
         <div className="note-compose">
           <label className="modal-label">Add a note</label>
           <textarea
@@ -80,11 +93,17 @@ export default function NotesThread({ initiative, isDiTeam }: Props) {
             value={draft}
             onChange={e => setDraft(e.target.value)}
             rows={3}
+            autoFocus
           />
           {error && <p style={{ color: 'var(--danger)', fontSize: '.8rem' }}>{error}</p>}
-          <button type="button" className="btn btn-grad btn-sm" onClick={handlePost} disabled={posting || !draft.trim()}>
-            {posting ? 'Posting…' : 'Post Note'}
-          </button>
+          <div className="note-compose-actions">
+            <button type="button" className="btn btn-grad btn-sm" onClick={handlePost} disabled={posting || !draft.trim()}>
+              {posting ? 'Posting…' : 'Post Note'}
+            </button>
+            <button type="button" className="btn btn-outline btn-sm" onClick={handleCancel} disabled={posting}>
+              Cancel
+            </button>
+          </div>
         </div>
       )}
     </>
