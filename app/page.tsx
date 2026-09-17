@@ -78,7 +78,7 @@ export default function Home() {
           <h1>Where <span>ideas</span> become reality.</h1>
           <p>Your quick-capture notebook, the team's whiteboard, and the company's roadmap.</p>
           <div className="tab-bar">
-            {(['personal', 'community', 'tracker', 'archive', 'di-roadmap'] as Tab[]).map(t => (
+            {(['personal', 'community', 'tracker', 'di-roadmap', 'archive'] as Tab[]).map(t => (
               <button
                 key={t}
                 className={`tab-btn${tab === t ? ' active' : ''}`}
