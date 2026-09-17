@@ -520,8 +520,10 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
 .size-badge{font-size:.58rem;font-weight:800;color:var(--text-3);background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:.08rem .35rem}
 .link-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;color:var(--blue-l)}
 .link-badge svg{width:12px;height:12px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round}
-.gantt-sub{display:flex;align-items:center;gap:.4rem;margin-top:.3rem}
-.owner-avatar{width:20px;height:20px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:.5rem;font-weight:800;color:#fff;flex-shrink:0}
+.gantt-architect{display:flex;align-items:center;gap:.55rem;margin-top:.6rem}
+.owner-avatar{width:28px;height:28px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:.64rem;font-weight:800;color:#fff;flex-shrink:0}
+.architect-name{font-size:.82rem;font-weight:700;color:var(--text-2);white-space:nowrap}
+.gantt-age{margin-top:.5rem}
 .state-tag{font-size:.62rem;font-weight:700;padding:.1rem .45rem;border-radius:100px;display:inline-flex;align-items:center;gap:.25rem}
 .state-tag.blocked{background:var(--danger-bg);color:var(--danger)}
 .state-tag.approval{background:var(--amber-bg);color:var(--amber)}
@@ -561,8 +563,7 @@ footer{text-align:center;padding:3rem 2rem;max-width:1440px;margin:0 auto}
   .variance{text-align:left}
 }
 
-.gantt-actions{display:flex;align-items:center;gap:.75rem;margin-top:.3rem}
-.gantt-actions .edit-link{margin-top:0}
+.gantt-actions{display:flex;flex-direction:column;align-items:flex-start;gap:.4rem;margin-top:.85rem}
 .stage-current{font-size:.82rem;color:var(--text-2);line-height:1.6;margin-bottom:1rem}
 .stage-hint{font-size:.72rem;color:var(--text-3);margin-top:.5rem}
 

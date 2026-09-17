@@ -81,13 +81,17 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage }
             </span>
           )}
         </div>
-        <div className="gantt-sub">
+        <div className="gantt-architect">
           <span className="owner-avatar" style={{ background: avatarBg }}>{initials(initiative.architect)}</span>
           {IN_FLIGHT_STATUSES.includes(initiative.status) && initiative.architect && (
-            <span className="waiting-note">architect: <b>{initiative.architect}</b></span>
+            <span className="architect-name">{initiative.architect}</span>
           )}
-          {ageLabel && <span className={ageClass}>{ageLabel}</span>}
         </div>
+        {ageLabel && (
+          <div className="gantt-age">
+            <span className={ageClass}>{ageLabel}</span>
+          </div>
+        )}
         {initiative.status === 'Blocked' && (
           <p className="waiting-note">
             waiting on: <b>{open?.blocker_note || BLOCKER_LABEL[open?.blocker_category ?? ''] || 'unspecified'}</b>
@@ -98,13 +102,13 @@ export default function GanttRow({ initiative, isDiTeam, onEdit, onChangeStage }
         )}
         {isDiTeam && (
           <div className="gantt-actions">
-            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onEdit() }}>
-              Edit details &#8250;
+            <button className="btn btn-outline btn-xs" type="button" onClick={e => { e.stopPropagation(); onEdit() }}>
+              Edit details
             </button>
-            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); onChangeStage() }}>
-              Change Stage &#8250;
+            <button className="btn btn-outline btn-xs" type="button" onClick={e => { e.stopPropagation(); onChangeStage() }}>
+              Change Stage
             </button>
-            <button className="edit-link" type="button" onClick={e => { e.stopPropagation(); setAddingNote(true) }}>
+            <button className="btn btn-outline btn-xs" type="button" onClick={e => { e.stopPropagation(); setAddingNote(true) }}>
               + Add Note
             </button>
           </div>
