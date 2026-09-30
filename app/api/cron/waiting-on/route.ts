@@ -5,8 +5,13 @@ import { getTeamMap } from '@/lib/team'
 
 // Vercel cron: weekly — send reminders for every unique waiting-on person across open milestones
 export async function GET(req: Request) {
-  const secret = req.headers.get('x-cron-secret')
-  if (secret !== process.env.CRON_SECRET) {
+  // Vercel's scheduler sends 'Authorization: Bearer <CRON_SECRET>'; 'x-cron-secret' is kept for manual runs.
+  const expected = process.env.CRON_SECRET
+  const authorized = !!expected && (
+    req.headers.get('authorization') === `Bearer ${expected}` ||
+    req.headers.get('x-cron-secret') === expected
+  )
+  if (!authorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
